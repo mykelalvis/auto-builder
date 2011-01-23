@@ -5,154 +5,11 @@ import manifest
 import os
 import subprocess
 
-from conf import jar_path, src_path, bundle_dirs, do_not_package_libs
+from conf import project_name, jar_path, src_path, bundle_dirs, do_not_package_libs
 
 from optparse import OptionParser
 from os.path import join, abspath
-
-class Gen:
-    def __init__(self, deps):
-        self.jars = deps.jars
-        self.src = deps.src.bundles
-        self.exports = deps.exports
-        self.bundles = deps.bundles
-        self.required_jars = deps.required_jars.values()
-        self.target_platform = deps.target_platform
-    
-    def __build_classpath__(self, bundle):
-        if bundle.classpath == None:
-            bundle.classpath = {}
-               
-            for lib in bundle.extra_libs.keys():
-                bundle.classpath[lib] = lib
-                #print 'EXTRA LIBS #####################', bundle.extra_libs
-                
-            for dep in bundle.deps:
-                if dep.classpath == None:
-                    self.__build_classpath__(dep)
-                    
-                for clazz1 in dep.classpath.keys():
-                    bundle.classpath[clazz1] = clazz1
-    
-                clazz = ''              
-                clazz += join(dep.root, dep.file)
-                if not dep.jar:
-                    clazz += '/bin'
-                    
-                if not (clazz in bundle.classpath):
-                    bundle.classpath[clazz] = clazz
-    
-    def generate_build_files(self):
-        
-        master_build_file = '<project name="rifidi-build" default="compile" basedir=".">\n'
-        master_build_file += '\t<property name="lib" value="./lib" />\n'        
-        master_build_file += '\t<target name="init">\n'+\
-                             '\t\t<delete dir="${lib}" />\n'+\
-                             '\t\t<mkdir dir="${lib}" />\n'+\
-                             '\t</target>\n'
-        master_compile = '\t<target name="compile">\n'
-        master_clean = '\t<target name="clean" description="clean up">\n'
-        #master_clean
-        master_lint = '\t<target name="lint" description="run lint" >\n'
-        master_package = '\t<target name="package" description="packages bundles" depends="init">\n'
-
-        for bundle in self.src:
-            assert bundle.root != ''
-            extra_libs = False
-            home = os.getcwd()
-            os.chdir(bundle.root)
-            build_xml = open('./build.xml', 'w')
-            build_xml.write('<?xml version="1.0"?>\n')
-            build_xml.write('<project name="'+str(bundle.sym_name)+'" default="compile" '+\
-                            'basedir="'+str(home)+'">\n')
-        
-            build_xml.write('\t<property name="lib" value="'+str(home)+'/lib" />\n')
-            build_xml.write('\t<property name="src" value="'+str(bundle.root)+'/src" />\n')
-            build_xml.write('\t<property name="build" value="'+str(bundle.root)+'/bin" />\n')
-            build_xml.write('\t<property name="manifest" value="'+str(bundle.root)+'/META-INF/MANIFEST.MF" />\n')
-            build_xml.write('\t<property name="metainf" value="'+str(bundle.root)+'/META-INF" />\n')
-            build_xml.write('\t<property name="bundle" value="'+str(home)+'/lib/'+str(bundle.sym_name)+'_'+\
-                            bundle.version.__str__()+'.jar" />\n')
-            
-            self.__build_classpath__(bundle)
-            
-            build_xml.write('\t<path id="classpath">\n')
-            for location in bundle.classpath.keys():
-                build_xml.write('\t\t<pathelement location="'+str(location)+'"/>\n')
-
-            build_xml.write('\t</path>\n')
-
-            build_xml.write('\t<target name="init" depends="clean">\n'+\
-                            '\t\t<tstamp />\n\t\t<mkdir dir="${build}" />\n'+\
-                            '\t</target>\n')
-            
-            build_xml.write('\t<target name="clean" description="clean up">\n'+\
-                            '\t\t<delete dir="${build}" />\n'+\
-                            '\t</target>\n')
-        
-            build_xml.write('\t<target name="compile" depends="init">\n')
-            build_xml.write('\t\t<javac srcdir="${src}" destdir="${build}" '+\
-                            'classpathRef="classpath"/>\n')
-            build_xml.write('\t</target>\n')
-
-            build_xml.write('\t<target name="lint" depends="init">\n')
-            build_xml.write('\t\t<javac srcdir="${src}" destdir="${build}" '+\
-                            'classpathRef="classpath">\n')
-            build_xml.write('\t\t\t<compilerarg value="-Xlint"/>\n')
-            build_xml.write('\t\t</javac>\n')
-            build_xml.write('\t</target>\n')
-            
-            build_xml.write('\t<target name="package" depends="compile">\n')
-            for i in bundle.extra_libs:
-                build_xml.write('\t\t<mkdir dir="tmp1"/>\n')
-                build_xml.write('\t\t<unjar src="'+i+'" dest="tmp1" />\n')
-                extra_libs = True
-            if extra_libs:    
-                build_xml.write('\t\t<delete dir="'+join('tmp1', 'META-INF')+'"/>\n')
-                build_xml.write('\t\t<copy todir="${build}">\n')
-                build_xml.write('\t\t\t<fileset dir="tmp1"><include name="**"/></fileset>\n')
-                build_xml.write('\t\t</copy>\n')
-                build_xml.write('\t\t<delete dir="tmp1"/>\n')
-
-            build_xml.write('\t\t<jar destfile="${bundle}" basedir="${build}" manifest="${manifest}">\n')
-            build_xml.write('\t\t\t<metainf dir="${metainf}"/>\n')
-            build_xml.write('\t\t</jar>\n')
-                
-            build_xml.write('\t</target>\n')
-            
-            build_xml.write('</project>\n')
-            master_compile += '\t\t<ant dir="'+bundle.root+'" target="compile" /> \n'
-            master_clean += '\t\t<ant dir="'+bundle.root+'" target="clean" /> \n'
-            master_lint += '\t\t<ant dir="'+bundle.root+'" target="lint" /> \n'
-            master_package += '\t\t<ant dir="'+bundle.root+'" target="package" /> \n'
-            build_xml.close()
-            
-            os.chdir(home)
-        master_compile += '\t</target>\n'
-        master_clean += '\t</target>\n'
-        master_lint += '\t</target>\n'
-        
-        #for jar_bundle in self.required_jars:
-        #    print join (jar_bundle.root, jar_bundle.file)
-        #    master_package += '\t\t<copy file="'+join(jar_bundle.root, jar_bundle.file)+'" todir="${lib}" overwrite="true" />\n'
-        for root, file, is_dir in self.target_platform.values():
-            #master_package += '\t\t<echo> copying '+join(root,file)+' </echo>\n'
-            if is_dir:
-                #print join(root, file)
-                master_package+= '\t\t<mkdir dir="${lib}/'+file+'"/>\n'
-                master_package += '\t\t<copy todir="${lib}/'+file+'"><fileset dir="'+join(root,file)+'"/></copy>\n'
-            else:
-                master_package += '\t\t<copy file="'+join(root,file)+'" todir="${lib}" overwrite="true" />\n'
-        master_package += '\t</target>\n'
-        
-        master_build_file += master_clean
-        master_build_file += master_compile
-        master_build_file += master_lint
-        master_build_file += master_package
-        
-        master_build_file += '\n</project>\n'
-        master_build_xml = open('./build.xml', 'w')
-        master_build_xml.write(master_build_file)
+from generator import AntGenerator, FileWriter
 
 class Dep:
     def __init__(self, jars, src, target):
@@ -264,20 +121,26 @@ class Dep:
                 assert bundle.fragment_host.name in bundles
               
             for required_bundle_info in bundle.rbundles:
+                found = False
+                print 'required bundle', bundle.sym_name , required_bundle_info.name 
                 if required_bundle_info.name in bundles and \
                     required_bundle_info.is_in_range(\
                         bundles[required_bundle_info.name].version):
+                    found = True
                     if bundle.fragment and bundle.sym_name == 'com.ambient.labtrack.test':
                         print 'adding dep '+str(required_bundle_info.name)+\
                               '-'+str(bundles[required_bundle_info.name].version),' to ',\
                                       bundle.sym_name
-                        print 'Adding the dep bundle = ', required_bundle_info.name, bundles[required_bundle_info.name]
+                    print 'Adding the dep bundle = ', required_bundle_info.name, bundles[required_bundle_info.name]
                     
                     bundle.add_dep(bundles[required_bundle_info.name])
                     if bundles[required_bundle_info.name].jar:
                         required_jars[bundles[required_bundle_info.name].sym_name] =\
                         bundles[required_bundle_info.name]
                         
+                if not found:
+                    print 'ERROR could not find matching required bundle ',\
+                        required_bundle_info.name, required_bundle_info
                         
             for package in bundle.ipackages:
                 found = False
@@ -526,13 +389,13 @@ if __name__ == '__main__':
     if params.options.check_dep:
         if not jars:
             jars = load_jars()
-       
+               
         if not src:
             src = load_src()
-        
+                
         #jars.display()
         #src.display()
-        
+            
         deps = Dep(jars, src, jars.target_platform)
         assert deps.resolve()
         assert deps.sort()
@@ -541,15 +404,18 @@ if __name__ == '__main__':
     if params.options.build_gen or not cmd_set:
         if jars == None:
             jars = load_jars()
-       
+               
         if src == None:
             src = load_src()
-        
+                
         if deps == None:
             deps = Dep(jars, src, jars.target_platform)
             assert deps.resolve()
             assert deps.sort()
-        gen = Gen(deps)
+            
+        writer = FileWriter()
+        gen = AntGenerator(project_name, deps.jars, deps.src.bundles,
+                           deps.target_platform, '.', writer)
         gen.generate_build_files()
         
     #else:
