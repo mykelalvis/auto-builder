@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 #
-# This module contains the Dependencies class and its unit test.  The dependancies
-# class is part of the auto-builder tool suite.  The unit test is at the
-# bottom; it can be executed by running the following command:
-#
-# $ python dependencies.py
-#
-# Reading the unit test is the best place to start to learn how it works.  After
-# that the next place is to start to see how it is integrated into the
-# auto-builder tool suite, which one can do by reading auto_builder.py.
-#
+#    
 #    James Percent (james@empty-set.net)
 #    Copyright 2010, 2011 James Percent 
 # 
@@ -26,7 +17,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-        
 class Jars:
     def __init__(self):
         self.jar_files = []
