@@ -107,13 +107,11 @@ class manifest_test(unittest.TestCase):
                 self.assertEquals('1.2.15', i.b_version.__str__())
                 self.assertEquals(False, i.e_inclusive)
                 self.assertEquals(str(sys.maxint),i.e_version.__str__())
-        
             elif i.name == 'org.apache.log4j.lf5.viewer.configure':
                 self.assertEquals(True, i.b_inclusive)
                 self.assertEquals('1.2.15', i.b_version.__str__())
                 self.assertEquals(False, i.e_inclusive)
                 self.assertEquals(str(sys.maxint),i.e_version.__str__())        
-        
             elif i.name == 'org.apache.log4j.lf5.viewer.images':
                 self.assertEquals(True, i.b_inclusive)
                 self.assertEquals('1.2.15', i.b_version.__str__())
@@ -158,8 +156,7 @@ class manifest_test(unittest.TestCase):
                 self.assertEquals(True, i.b_inclusive)
                 self.assertEquals('1.2.15', i.b_version.__str__())
                 self.assertEquals(False, i.e_inclusive)
-                self.assertEquals(str(sys.maxint),i.e_version.__str__())
-                
+                self.assertEquals(str(sys.maxint),i.e_version.__str__()) 
             else:
                 print i.name
                 self.assertTrue(False)
@@ -314,15 +311,13 @@ class manifest_test(unittest.TestCase):
         
         v2 = Version()
         v3 = Version()
-
+        
         v2.set_major(3)
         v2.set_minor(3)
         v2.set_micro(0)
-
+        
         v3.set_major(3)
         v3.set_minor(3)
-        
-
         
         self.assertEquals(False, v3.is_less(v2))
         self.assertEquals(False, v2.is_less(v3))
