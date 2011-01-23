@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from os import getcwd, chdir
 from os.path import join
 
 class AntGenerator:
@@ -207,22 +208,23 @@ class FileWriter:
         self.home_dir = None
         self.build_xml = None
     
-    def get_cwd():
+    def get_cwd(self):
         assert self.home_dir
         return self.home_dir
     
     def create_build_file(self, root_dir):
-        self.home_dir = os.getcwd()
-        os.chdir(root_dir)
-        self.build_xml = open('./build.xml', 'w')
+        self.home_dir = getcwd()
+        chdir(root_dir)
+        self.build_xml = open('build.xml', 'w')
             
     def write(self, value):
         assert self.build_xml and self.home_dir
         self.build_xml.write(value)
         
     def close_build_file(self):
-        os.chdir(self.home_dir)
+        assert self.build_xml and self.home_dir
         self.build_xml.close()
+        chdir(self.home_dir)
         self.home_dir = None
         self.build_xml = None
 
