@@ -267,6 +267,7 @@ class manifest_test(unittest.TestCase):
         p = ManifestParser()
         bundle = p.parse(test)
         self.assertEquals(bundle.version.__str__(), '3.5.2.R35x_v20100126')
+        
     def test_export_package(self):
         test = 'Export-Package: org.apache.commons.pool;version=1.4, org.apache.common\r\n s.pool.impl;version=1.4'
         p = ManifestParser()
@@ -278,7 +279,6 @@ class manifest_test(unittest.TestCase):
         self.assertEquals(bundle.epackages[1].name, 'org.apache.commons.pool.impl')
         self.assertEquals(bundle.epackages[1].b_version.__str__(), '1.4')
         self.assertEquals(bundle.epackages[1].e_version.__str__(), str(sys.maxint))
-        
         
     def test_version(self):
         v = Version()
@@ -324,7 +324,6 @@ class manifest_test(unittest.TestCase):
         self.assertEquals(True, v2.is_equal(v3))
         self.assertEquals(True, v3.is_equal(v2))
         
-        
     def test_package(self):
         i = Package('java.lang.whatever')
         v = Version()
@@ -361,7 +360,6 @@ class manifest_test(unittest.TestCase):
         self.assertEquals(True, i.is_in_range(v1))
         self.assertEquals(True, i.is_in_range(v2))
         
-        
         v2 = Version()
         v3 = Version()
 
@@ -387,10 +385,139 @@ class manifest_test(unittest.TestCase):
 # auto_builder.py Tests
 #
 
+#class ParametersTest(unittest):
+    #def testLogLevels(self):
+    #    
+    #    params = Parameters()
+    #    self.assertEquals(logging.WARN, logger.getEffectiveLevel())
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'debug']
+    #    params = Parameters()
+    #    self.assertEquals(logging.DEBUG, logger.getEffectiveLevel())
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'info']
+    #    params = Parameters()
+    #    self.assertEquals(logging.INFO, logger.getEffectiveLevel())
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'warn']
+    #    params = Parameters()
+    #    self.assertEquals(logging.WARN, logger.getEffectiveLevel())
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'error']
+    #    params = Parameters()
+    #    self.assertEquals(logging.ERROR, logger.getEffectiveLevel())
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'critical']
+    #    params = Parameters()
+    #    self.assertEquals(logging.CRITICAL, logger.getEffectiveLevel())
+    #
+    #    sys.argv = [sys.argv[0], '-l', 'notaloglevel']
+    #    params = Parameters()
+    #    self.assertEquals(logging.CRITICAL, logger.getEffectiveLevel())
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'stillnotaloglevel']
+    #    params = Parameters()
+    #    self.assertEquals(logging.CRITICAL, logger.getEffectiveLevel())
+    #
+    #
+    #def testOptions(self):
+    #
+    #    sys.argv = [sys.argv[0], '-d']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(True, params.options.debug)
+    #    self.assertEquals(10, params.options.count)
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '--debug']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(True, params.options.debug)
+    #    self.assertEquals(10, params.options.count)
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '--debug']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(True, params.options.debug)
+    #    self.assertEquals(10, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '-t']
+    #    params = Parameters()
+    #    self.assertEquals(True, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(False, params.options.debug)
+    #    self.assertEquals(10, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '--test', '-c', '1337']
+    #    params = Parameters()
+    #    self.assertEquals(True, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(False, params.options.debug)
+    #    self.assertEquals(1337, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '-i', '--count=31337']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(True, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(False, params.options.debug)
+    #    self.assertEquals(31337, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '--ip-frequency']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(True, params.options.ip_frequency)
+    #    self.assertEquals(None, params.options.loglevel)
+    #    self.assertEquals(False, params.options.debug)
+    #    self.assertEquals(10, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '-l', 'debug']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals('debug', params.options.loglevel)
+    #    self.assertEquals(False, params.options.debug)
+    #    self.assertEquals(10, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+    #    
+    #    sys.argv = [sys.argv[0], '--logging-level=warn']
+    #    params = Parameters()
+    #    self.assertEquals(False, params.options.test)
+    #    self.assertEquals(False, params.options.ip_frequency)
+    #    self.assertEquals('warn', params.options.loglevel)
+    #    self.assertEquals(False, params.options.debug)
+    #    self.assertEquals(10, params.options.count)        
+    #    self.assertEquals(0, len(params.args))
+
+
 ###############################################################################
 #
 # dependencies.py tests
 #
+
+class TestBinaryBundleFinder(unittest.TestCase):
+    def testLoad(self):
+        bfinder = BinaryBundleFinder()
+#        bfinder.jar_files = [mylist of jar files]
+        
+        
+ #         find the 
+        pass
+    
 
 ###############################################################################
 #
@@ -543,7 +670,7 @@ class AntGeneratorTest(unittest.TestCase):
         b.root = '../libs'
         b.file = 'org.eclipse.osgi.jar'
         b.version = v1
-        b.jar = True
+        b.is_binary_bundle = True
         
         b1 = Bundle()
         b1.sym_name = p1.name
@@ -581,18 +708,11 @@ class AntGeneratorTest(unittest.TestCase):
         self.assertTrue('../minerva' in writer.files)
         self.assertTrue('../minerva.tools' in writer.files)
         self.assertTrue('./' in writer.files)
-
-        #for i in writer.files.values():
-        #    print i
         
         self.assertEquals(self.minerva, writer.files['../minerva'])
         self.assertEquals(self.minerva_tools, writer.files['../minerva.tools'])
         self.assertEquals(self.master, writer.files['./'])
-        
 
-        
-        
-        
 if __name__ == '__main__':
     unittest.main()
     
