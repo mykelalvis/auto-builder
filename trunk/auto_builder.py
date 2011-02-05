@@ -1,15 +1,25 @@
 #!/usr/bin/env python
 
-import manifest
+import logging
+import logging.config
+logging.config.fileConfig('logger.config')
 
 import os
+import manifest
 import subprocess
+import dependencies
+import generator
 
 from conf import project_name, jar_path, src_path, bundle_dirs, do_not_package_libs
-
 from optparse import OptionParser
 from os.path import join, abspath
 from generator import AntGenerator, FileWriter
+from dependencies import BinaryBundleFinder
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+
+#import dependencies
 
 class Dep:
     def __init__(self, jars, src, target):
@@ -30,7 +40,7 @@ class Dep:
                 assert index >= 0 and index <= len(packages[package.name])
                     
                 if package.b_version.is_equal(pentry.b_version):
-                    if bundle.jar:
+                    if bundle.is_binary_bundle:
                         packages[package.name].insert(index, (package, bundle))
                     else:
                         packages[package.name].insert(index+1, (package, bundle))
@@ -60,7 +70,7 @@ class Dep:
                 #print 'dep bundle ', dep_bundle, dep_bundle.sym_name,'=', dep_bundle.build_level
                 
                 
-            if dep_bundle.build_level >= bundle.build_level and not dep_bundle.jar:
+            if dep_bundle.build_level >= bundle.build_level and not dep_bundle.is_binary_bundle:
                 #print 'matched: ', bundle.sym_name, ' deps on ', dep_bundle.sym_name
                 bundle.build_level = dep_bundle.build_level + 1
                 ret = True
@@ -134,7 +144,7 @@ class Dep:
                     print 'Adding the dep bundle = ', required_bundle_info.name, bundles[required_bundle_info.name]
                     
                     bundle.add_dep(bundles[required_bundle_info.name])
-                    if bundles[required_bundle_info.name].jar:
+                    if bundles[required_bundle_info.name].is_binary_bundle:
                         required_jars[bundles[required_bundle_info.name].sym_name] =\
                         bundles[required_bundle_info.name]
                         
@@ -154,7 +164,7 @@ class Dep:
                             found = True
                             #print 'adding dep '+ex_bundle.sym_name+' to '+bundle.sym_name, 'because of package ', package.name
                             bundle.add_dep(ex_bundle)
-                            if ex_bundle.jar:
+                            if ex_bundle.is_binary_bundle:
                                 required_jars[ex_bundle.sym_name] = ex_bundle
                         else:
                             version_found.append(ex_package)
@@ -210,7 +220,7 @@ class Jars:
             bundle = parser.parse(manifest_file)
             bundle.root = root
             bundle.file = file
-            bundle.jar = True
+            bundle.is_binary_bundle = True
             if bundle.sym_name == '':
                 #print 'Bundle '+join(root, file)+' has no symbolic name; skipping it'
                 if not (bundle.file == 'aspectjrt.jar' or \
@@ -321,6 +331,9 @@ class Parameters:
         display_src_help = 'Display sources'
         check_dep_help = 'Check dependencies'
         build_gen_help = 'Generate build artifacts'
+        loglevel_help = 'set the logging level; valid values are debug, info, '\
+                        'warn, error and critical'
+
         #; if no options are given, '\
         #                 'then this command is executed; supported values'\
         #                 ' are: ant, make, maven; default value is: ant.'
@@ -333,19 +346,40 @@ class Parameters:
         self.parser.add_option("-c", "--check-dep", action="store_true",
                                default=False, dest="check_dep",
                                help=check_dep_help)
+        self.parser.add_option('-l', '--logging-level', dest='loglevel',
+                               metavar='LEVEL', help=loglevel_help)
         self.parser.add_option("-b", "--build-gen", action="store_true",
                                default=False, dest="build_gen",
                                help=build_gen_help)
-        
         #self.parser.add_option("-g", "--gen-build",
         #              dest="gen_build", metavar="BUILD-TYPE", type=str,
         #              default='ant', help=gen_build_help)
                         
         (self.options, self.args) = self.parser.parse_args()
+                    
+        valid_levels = { 'debug' : logging.DEBUG, 'info' : logging.INFO,
+                         'warn' : logging.WARN, 'error' : logging.ERROR,
+                         'critical' : logging.CRITICAL}    
             
- 
+        if self.options.loglevel != None:
+            if self.options.loglevel in valid_levels:
+                logger.setLevel(valid_levels[self.options.loglevel])
+                dependencies.set_logger_level(valid_levels[self.options.loglevel])
+                generator.set_logger_level(valid_levels[self.options.loglevel])
+                manifest.set_logger_level(valid_levels[self.options.loglevel]) 
+            else:
+                logger.error('Invalid log level: '+self.options.loglevel+ \
+                             ' using default, which is WARN')
+                self.options.loglevel = None
+        
+        if not self.options.loglevel:
+            logger.setLevel(valid_levels['warn'])
+            dependencies.set_logger_level(valid_levels['warn'])
+            generator.set_logger_level(valid_levels['warn'])
+            manifest.set_logger_level(valid_levels['warn'])
+            
 def load_jars():
-    jfinder = Jars()
+    jfinder = BinaryBundleFinder()
     jfinder.find(jar_path)
     jfinder.load()
     return jfinder

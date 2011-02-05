@@ -16,9 +16,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+import logging
 from os import getcwd, chdir
 from os.path import join
+
+logger = logging.getLogger(__name__)
+def set_logger_level(logLevel):
+    logger.setLevel(logLevel)
 
 class AntGenerator:
     def __init__(self, project_name, jar_bundles, source_bundles, target_platform,
@@ -52,7 +56,7 @@ class AntGenerator:
                     
                 clazz = ''              
                 clazz += join(dep.root, dep.file)
-                if not dep.jar:
+                if not dep.is_binary_bundle:
                     clazz += '/bin'
                     
                 if not (clazz in bundle.classpath):
@@ -158,7 +162,7 @@ class AntGenerator:
         for root, file, is_dir in self.target_platform.values():
             #master_package += '\t\t<echo> copying '+join(root,file)+' </echo>\n'
             if is_dir:
-                #print join(root, file)
+                logger.debug(join(root, file))
                 self.master_package+= '\t\t<mkdir dir="${lib}/'+file+'"/>\n'
                 self.master_package += '\t\t<copy todir="${lib}/'+file+\
                                   '"><fileset dir="'+join(root,file)+\
@@ -186,7 +190,7 @@ class AntGenerator:
             
             self.writer.create_build_file(bundle.root)
 
-            print bundle
+            logger.debug(bundle)
             self.__build_classpath__(bundle)
                 
             self.__write_preamble__(self.writer, self.writer.get_cwd(), bundle)

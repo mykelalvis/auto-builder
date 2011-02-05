@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 
+import os
+import re
+import sys
+import logging
 import ply.lex as lex
 import ply.yacc as yacc
-import re
-import os
-import sys
+
+
+logger = logging.getLogger(__name__)
+def set_logger_level(logLevel):
+    logger.setLevel(logLevel)
+
 
 class Bundle:
     def __init__(self):
@@ -24,7 +31,7 @@ class Bundle:
         self.rbundles = []
         self.version = Version()
         self.root = ''
-        self.jar = False
+        self.is_binary_bundle = False
         self.file = ''
         self.fragment = False
         self.fragment_host = None
@@ -49,7 +56,7 @@ class Bundle:
        
     def display(self):
         print        'Symbolic Name     = ',self.sym_name
-        if self.jar == True:
+        if self.is_binary_bundle == True:
             print    'Java Archive      = ', os.path.join(self.root, self.file)
         else:
             print    'Source Directory  = ', self.root
@@ -222,7 +229,7 @@ class Ast:
         self.bundle = Bundle()
             
     def bundle_symbolic_name(self, p):
-        #print ' bundle symbolic name '
+        logger.debug(' bundle symbolic name ')
         assert len(p) == 3 or len(p) == 4
         if len(p) == 3:
             self.bundle.sym_name = p[2]
@@ -245,8 +252,8 @@ class Ast:
         self.bundle.add_required_bundle_lookup_info(self.bundle.fragment_host)
         
     def packages(self, p):
-        #print ' packages '
-        #print p[0], p[1], p[2] 
+        logger.debug(' packages ')
+        logger.debug(p[0], p[1], p[2])
         assert len(p) == 3 and p[2] != None
         
         packages = p[2]
@@ -255,12 +262,12 @@ class Ast:
         for i in packages:            
             if cmd == 'Import-Package:':
                 self.bundle.add_ipackage(i)
-                #print '---- adding import package ----', i
+                logger.debug('---- adding import package ----'+str(i))
             elif cmd == 'Export-Package:':
                 if i.name == 'javax.xml.namespace':
                     assert False
                 self.bundle.add_epackage(i)
-                #print '---- adding export package ----', i                        
+                logger.debug('---- adding export package ----'+str(i))                        
             elif cmd == 'Require-Bundle:':
                 # h4x0r
                 self.bundle.add_required_bundle_lookup_info(i)
@@ -268,18 +275,18 @@ class Ast:
                 assert False
                 
     def requires(self, p):
-        #print ' requires '
+        logger.debug(' requires ')
         assert len(p) == 2 or len(p) == 4
         if len(p) == 2:
             p[0] = p[1]
         else:
-            #print p[1], p[2], p[3]
+            logger.debug(p[1], p[2], p[3])
             assert p[1] != None
             p[1].extend(p[3])
             p[0] = p[1]
             
     def require(self, p):
-        #print ' require '
+        logger.debug(' require ')
         assert len(p) == 2 or len(p) == 4
         if len(p) == 2:
             p[0] = p[1]
@@ -287,12 +294,12 @@ class Ast:
             assert len(p[1]) == 1 or p[3] == None
             if p[3] != None:
                 assert len(p[3]) == 4
-                #print p[1], p[3] 
+                logger.debug(p[1], p[3])
                 p[1][0].set_version_range(p[3][0], p[3][1], p[3][2], p[3][3])
             p[0] = p[1]
                
     def package_names(self, p):
-        #print ' package-names '
+        logger.debug(' package-names ')
         if len(p) == 2:
             p[0] = [Package(p[1]),]
         else:
@@ -300,7 +307,7 @@ class Ast:
             p[0] = p[1].append(Package(p[3]))
             
     def package_name(self, p):
-        #print 'package_name'
+        logger.debug('package_name')
         if len(p) == 4:
             p[0] = p[1]+p[2]+p[3]
         elif len(p) == 3:
@@ -309,7 +316,7 @@ class Ast:
             assert len(p) == 2
             p[0] = p[1]
     def parameter(self, p):
-        #print 'parameter ', p[1], len(p)
+        logger.debug('parameter '+str(p[1])+str(len(p)))
         assert len(p) == 2 or len(p) == 4
         assert p[0] == None or p[3] == None
         # XXX - this is a hack
@@ -317,16 +324,16 @@ class Ast:
             p[0] = p[1]
         elif len(p) == 4 and p[3] != None:
             p[0] = p[3]
-        #print '----------------', p[0]
+        logger.debug('----------------'+str(p[0]))
         
     def version(self, p):
-        #print ' version '
+        #logger.debug(' version ')
         assert len(p) == 4
         p[0] = p[3]
         
     def version_string(self, p):
         assert len(p) == 2 or len(p) == 4 or len(p) == 8
-        #print ' version string', p[0], p[1], p[2], p[3]
+        #print' version string', p[0], p[1], p[2], p[3]
         if len(p) == 2 or len(p) == 4:
             v = Version()
             v.set_major(str(sys.maxint))
@@ -596,6 +603,7 @@ class ManifestParser:
         headers = re.split(r'\n', manifest)
 
         self.ast = Ast() 
+        parsed = False
         
         for header in headers:
             if header.startswith('Import-Package:') \
@@ -613,5 +621,10 @@ class ManifestParser:
                 #print header
                 
                 yacc.parse(header)
-        return self.ast.bundle
+                parsed = True
+        
+        if parsed:
+            return self.ast.bundle
+        else:
+            return None
         
