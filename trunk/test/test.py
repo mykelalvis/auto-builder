@@ -23,11 +23,21 @@
 
 import unittest
 import pdb
+import sys
+from os.path import join
+
+sys.path.append('../.')
+
+import auto_builder
+import dependencies
+import generator
+import manifest
 from auto_builder import *
 from dependencies import *
 from manifest import *
 from generator import *
-from os.path import join
+
+auto_builder.set_logger_level(logging.WARN)
 
 ###############################################################################
 #
@@ -510,13 +520,288 @@ class manifest_test(unittest.TestCase):
 #
 
 class TestBinaryBundleFinder(unittest.TestCase):
+        
+    def testFind(self):
+        bfinder = BinaryBundleFinder()
+        jar_path = [os.getcwd()]
+        bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355', 'org.aspectj.weaver_1.6.4.20090304172355', 'org.syndeticlogic.gnu.io_2.1.7']
+        bfinder.find(jar_path, bundle_dirs)
+
+        files = ['aspectjrt.jar',\
+        'aspectjweaver.jar',\
+        'com.springsource.javax.annotation_1.0.0.jar',\
+        'com.springsource.javax.ejb_3.0.0.jar',\
+        'com.springsource.javax.el_1.0.0.jar',\
+        'com.springsource.javax.persistence_1.0.0.jar',\
+        'com.springsource.javax.servlet.jsp.jstl_1.1.2.jar',\
+        'com.springsource.javax.servlet.jsp_2.1.0.jar',\
+        'com.springsource.javax.servlet_2.5.0.jar',\
+        'com.springsource.javax.xml.bind_2.0.0.jar',\
+        'com.springsource.javax.xml.rpc_1.1.0.jar',\
+        'com.springsource.javax.xml.soap_1.3.0.jar',\
+        'com.springsource.javax.xml.stream_1.0.1.jar',\
+        'com.springsource.javax.xml.ws_2.1.1.jar',\
+        'javax.servlet_2.5.0.v200806031605.jar',\
+        'org.apache.geronimo.specs.geronimo-activation_1.1_spec_1.0.2.jar',\
+        'org.apache.geronimo.specs.geronimo-j2ee-management_1.1_spec_1.0.1.jar',\
+        'org.apache.geronimo.specs.geronimo-javamail_1.4_spec_1.3.0.jar',\
+        'org.apache.geronimo.specs.geronimo-jms_1.1_spec_1.1.1.jar',\
+        'org.apache.activemq.activemq-core_5.3.0.jar',\
+        'org.apache.activemq.activemq-pool_5.3.0.jar',\
+        'org.apache.activemq.kahadb_5.3.0.jar',\
+        'org.apache.derby_10.5.1.1_201005192117.jar',\
+        'org.apache.felix.bundlerepository_1.5.0.SNAPSHOT.jar',\
+        'org.apache.xbean.spring_3.6.0.jar',\
+        'org.fosstrak.tdt.tdt_0.9.0.jar',\
+        'org.jdom_1.0.0.v200806100616.jar',\
+        'org.rifidi.org.apache.mina-core_1.0.0.jar',\
+        'org.rifidi.org.llrp.ltk_1.0.6.jar',\
+        'org.rifidi.org.relique.jdbc_1.0.0.jar',\
+        'RXTXcomm.jar',\
+        'com.springsource.org.apache.commons.logging_1.1.1.jar',\
+        'com.springsource.org.apache.log4j_1.2.15.jar',\
+        'com.springsource.slf4j.api_1.5.6.jar',\
+        'com.springsource.slf4j.jcl_1.5.6.jar',\
+        'com.springsource.slf4j.log4j_1.5.6.jar',\
+        'com.mysql.jdbc_5.1.10.jar',\
+        'org.eclipse.equinox.launcher_1.0.201.R35x_v20090715.jar',\
+        'org.eclipse.equinox.simpleconfigurator_1.0.100.v20090520-1905.jar',\
+        'org.eclipse.equinox.weaving.hook_1.0.0.200905031323.jar',\
+        'org.eclipse.osgi.services_3.2.0.v20090520-1800.jar',\
+        'org.eclipse.osgi_3.5.0.v20090520.jar',\
+        'com.springsource.net.sf.cglib_2.1.3.jar',\
+        'com.springsource.org.aopalliance_1.0.0.jar',\
+        'com.springsource.org.junit_4.8.1.jar',\
+        'org.rifidi.org.springframework.aop_2.5.6.SEC01.jar',\
+        'org.rifidi.org.springframework.context_2.5.6.SEC01.jar',\
+        'org.springframework.beans_2.5.6.SEC01.jar',\
+        'org.springframework.bundle.osgi.web.extender_1.1.3.jar',\
+        'org.springframework.bundle.spring.aspects_2.5.5.jar',\
+        'org.springframework.context.support_2.5.6.SEC01.jar',\
+        'org.springframework.core_2.5.6.SEC01.jar',\
+        'org.springframework.jdbc_2.5.6.SEC01.jar',\
+        'org.springframework.jms_2.5.6.SEC01.jar',\
+        'org.springframework.orm_2.5.6.SEC01.jar',\
+        'org.springframework.osgi.core_1.1.3.RELEASE.jar',\
+        'org.springframework.osgi.extender_1.1.3.RELEASE.jar',\
+        'org.springframework.osgi.io_1.1.3.RELEASE.jar',\
+        'org.springframework.osgi.web_1.1.3.RELEASE.jar',\
+        'org.springframework.security.core_2.0.4.jar',\
+        'org.springframework.transaction_2.5.6.SEC01.jar',\
+        'org.springframework.web.servlet_2.5.6.SEC01.jar',\
+        'org.springframework.web_2.5.6.SEC01.jar',\
+        'com.springsource.org.apache.catalina_6.0.18.jar',\
+        'com.springsource.org.apache.coyote_6.0.18.jar',\
+        'com.springsource.org.apache.el_6.0.18.jar',\
+        'com.springsource.org.apache.jasper.org.eclipse.jdt_6.0.18.jar',\
+        'com.springsource.org.apache.jasper_6.0.18.jar',\
+        'com.springsource.org.apache.juli.extras_6.0.18.jar',\
+        'com.springsource.org.apache.taglibs.standard_1.1.2.jar',\
+        'org.springframework.osgi.catalina.start.osgi_1.0.0.SNAPSHOT.jar']
+
+        self.assertEqual(files.__len__(), bfinder.jar_files.__len__())
+        for i in files:
+            found = False
+            for j in bfinder.jar_files:
+                if i == j[1]:
+                    found = True
+                    bfinder.jar_files.remove(j)
+                    
+            if not found:
+                print 'did not find ' + i
+                self.assertFalse(True)
+        
+#        print bfinder.target_platform
+        tp_values = bfinder.target_platform.values()
+        self.assertEqual(bundle_dirs.__len__(), tp_values.__len__())
+        for i in bundle_dirs:
+            found = False
+            for j in tp_values:
+                if i == j[1]:
+                    found = True
+                    self.assertTrue(True, j[2])
+                    tp_values.remove(j)
+            if not found:
+                print 'did not find ', i
+                self.assertFalse(True)
+                
     def testLoad(self):
         bfinder = BinaryBundleFinder()
-#        bfinder.jar_files = [mylist of jar files]
+        jar_path = [os.getcwd()]
+        bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355',
+                       'org.aspectj.weaver_1.6.4.20090304172355',
+                       'org.syndeticlogic.gnu.io_2.1.7']
+        do_not_package_libs = ['com.springsource.org.junit_4.8.1.jar',
+                            'org.syndeticlogic.gnu.io_2.1.7.jar']
+        bfinder.find(jar_path, bundle_dirs)
+        bfinder.load(do_not_package_libs)
+
+        bundles = ['com.springsource.javax.annotation',
+        'com.springsource.javax.ejb',
+        'com.springsource.javax.el',
+        'com.springsource.javax.persistence',
+        'com.springsource.javax.servlet.jsp.jstl',
+        'com.springsource.javax.servlet.jsp',
+        'com.springsource.javax.servlet',
+        'com.springsource.javax.xml.bind',
+        'com.springsource.javax.xml.rpc',
+        'com.springsource.javax.xml.soap',
+        'com.springsource.javax.xml.stream',
+        'com.springsource.javax.xml.ws',
+        'javax.servlet',
+        'org.apache.geronimo.specs.geronimo-activation_1.1_spec',
+        'org.apache.geronimo.specs.geronimo-j2ee-management_1.1_spec',
+        'org.apache.geronimo.specs.geronimo-javamail_1.4_spec',
+        'org.apache.geronimo.specs.geronimo-jms_1.1_spec',
+        'org.apache.activemq.activemq-core',
+        'org.apache.activemq.activemq-pool',
+        'org.apache.activemq.kahadb',
+        'org.apache.derby',
+        'org.apache.felix.bundlerepository',
+        'org.apache.xbean.spring',
+        'org.fosstrak.tdt.tdt',
+        'org.jdom',
+        'org.rifidi.org.apache.mina-core',
+        'org.rifidi.org.llrp.ltk',
+        'org.rifidi.org.relique.jdbc',
+        'com.springsource.org.apache.commons.logging',
+        'com.springsource.org.apache.log4j',
+        'com.springsource.slf4j.api',
+        'com.springsource.slf4j.jcl',
+        'com.springsource.slf4j.log4j',
+        'com.mysql.jdbc',
+        'org.eclipse.equinox.launcher',
+        'org.eclipse.equinox.simpleconfigurator',
+        'org.eclipse.equinox.weaving.hook',
+        'org.eclipse.osgi.services',
+        'org.eclipse.osgi',
+        'com.springsource.net.sf.cglib',
+        'com.springsource.org.aopalliance',
+        'com.springsource.org.junit',
+        'org.rifidi.org.springframework.aop',
+        'org.rifidi.org.springframework.context',
+        'org.springframework.beans',
+        'org.springframework.bundle.osgi.web.extender',
+        'org.springframework.bundle.spring.aspects',
+        'org.springframework.context.support',
+        'org.springframework.core',
+        'org.springframework.jdbc',
+        'org.springframework.jms',
+        'org.springframework.orm',
+        'org.springframework.osgi.core',
+        'org.springframework.osgi.extender',
+        'org.springframework.osgi.io',
+        'org.springframework.osgi.web',
+        'org.springframework.security.core',
+        'org.springframework.transaction',
+        'org.springframework.web.servlet',
+        'org.springframework.web',
+        'com.springsource.org.apache.catalina',
+        'com.springsource.org.apache.coyote',
+        'com.springsource.org.apache.el',
+        'com.springsource.org.apache.jasper.org.eclipse.jdt',
+        'com.springsource.org.apache.jasper',
+        'com.springsource.org.apache.juli.extras',
+        'com.springsource.org.apache.taglibs.standard',
+        'org.springframework.osgi.catalina.start.osgi']
         
+        self.assertEqual(bundles.__len__(), bfinder.bundles.__len__())
+        bf_bundles = bfinder.bundles
+        for i in bundles:
+            found = False
+            for j in bf_bundles:
+                if i == j.sym_name:
+                    found = True
+                    bf_bundles.remove(j)            
+            if not found:
+                print 'did not find ' + i
+                self.assertFalse(True)
+        targets =[ ('org.syndeticlogic.gnu.io_2.1.7', True),
+        ('org.springframework.bundle.spring.aspects_2.5.5.jar', False),
+        ('com.springsource.org.apache.catalina_6.0.18.jar', False),
+        ('org.springframework.osgi.extender_1.1.3.RELEASE.jar', False),
+        ('org.eclipse.equinox.launcher_1.0.201.R35x_v20090715.jar', False),
+        ('com.springsource.javax.xml.rpc_1.1.0.jar', False),
+        ('com.springsource.org.apache.taglibs.standard_1.1.2.jar', False),
+        ('org.rifidi.org.relique.jdbc_1.0.0.jar', False),
+        ('org.apache.geronimo.specs.geronimo-j2ee-management_1.1_spec_1.0.1.jar', False),
+        ('org.springframework.osgi.core_1.1.3.RELEASE.jar', False),
+        ('org.springframework.beans_2.5.6.SEC01.jar', False),
+        ('com.springsource.slf4j.log4j_1.5.6.jar', False),
+        ('org.aspectj.weaver_1.6.4.20090304172355', True),
+        ('org.springframework.web.servlet_2.5.6.SEC01.jar', False),
+        ('org.springframework.osgi.catalina.start.osgi_1.0.0.SNAPSHOT.jar', False),
+        ('org.springframework.jdbc_2.5.6.SEC01.jar', False),
+        ('com.springsource.org.apache.jasper.org.eclipse.jdt_6.0.18.jar', False),
+        ('org.apache.activemq.kahadb_5.3.0.jar', False),
+        ('org.springframework.transaction_2.5.6.SEC01.jar', False),
+        ('org.springframework.context.support_2.5.6.SEC01.jar', False),
+        ('org.jdom_1.0.0.v200806100616.jar', False),
+        ('com.springsource.org.apache.coyote_6.0.18.jar', False),
+        ('javax.servlet_2.5.0.v200806031605.jar', False),
+        ('org.springframework.web_2.5.6.SEC01.jar', False),
+        ('org.apache.geronimo.specs.geronimo-activation_1.1_spec_1.0.2.jar', False),
+        ('org.apache.activemq.activemq-pool_5.3.0.jar', False),
+        ('org.apache.geronimo.specs.geronimo-jms_1.1_spec_1.1.1.jar', False),
+        ('com.springsource.org.apache.juli.extras_6.0.18.jar', False),
+        ('com.springsource.javax.servlet_2.5.0.jar', False),
+        ('com.springsource.org.aopalliance_1.0.0.jar', False),
+        ('org.aspectj.runtime_1.6.4.20090304172355', True),
+        ('com.springsource.org.apache.log4j_1.2.15.jar', False),
+        ('org.springframework.core_2.5.6.SEC01.jar', False),
+        ('com.springsource.slf4j.jcl_1.5.6.jar', False),
+        ('com.springsource.net.sf.cglib_2.1.3.jar', False),
+        ('org.apache.geronimo.specs.geronimo-javamail_1.4_spec_1.3.0.jar', False),
+        ('com.springsource.javax.el_1.0.0.jar', False),
+        ('org.rifidi.org.apache.mina-core_1.0.0.jar', False),
+        ('com.springsource.javax.xml.ws_2.1.1.jar', False),
+        ('com.springsource.javax.annotation_1.0.0.jar', False),
+        ('com.springsource.javax.ejb_3.0.0.jar', False),
+        ('org.rifidi.org.llrp.ltk_1.0.6.jar', False),
+        ('com.springsource.javax.servlet.jsp.jstl_1.1.2.jar', False),
+        ('com.mysql.jdbc_5.1.10.jar', False),
+        ('com.springsource.javax.persistence_1.0.0.jar', False),
+        ('org.eclipse.equinox.simpleconfigurator_1.0.100.v20090520-1905.jar', False),
+        ('org.fosstrak.tdt.tdt_0.9.0.jar', False),
+        ('com.springsource.javax.servlet.jsp_2.1.0.jar', False),
+        ('org.springframework.osgi.web_1.1.3.RELEASE.jar', False),
+        ('org.eclipse.osgi_3.5.0.v20090520.jar', False),
+        ('org.rifidi.org.springframework.aop_2.5.6.SEC01.jar', False),
+        ('org.apache.activemq.activemq-core_5.3.0.jar', False),
+        ('org.springframework.osgi.io_1.1.3.RELEASE.jar', False),
+        ('com.springsource.org.apache.commons.logging_1.1.1.jar', False),
+        ('org.springframework.security.core_2.0.4.jar', False),
+        ('com.springsource.org.apache.el_6.0.18.jar', False),
+        ('com.springsource.javax.xml.bind_2.0.0.jar', False),
+        ('org.eclipse.osgi.services_3.2.0.v20090520-1800.jar', False),
+        ('com.springsource.javax.xml.stream_1.0.1.jar', False),
+        ('org.springframework.jms_2.5.6.SEC01.jar', False),
+        ('com.springsource.slf4j.api_1.5.6.jar', False),
+        ('org.apache.xbean.spring_3.6.0.jar', False),
+        ('com.springsource.javax.xml.soap_1.3.0.jar', False),
+        ('org.apache.felix.bundlerepository_1.5.0.SNAPSHOT.jar', False),
+        ('org.apache.derby_10.5.1.1_201005192117.jar', False),
+        ('org.springframework.bundle.osgi.web.extender_1.1.3.jar', False),
+        ('com.springsource.org.apache.jasper_6.0.18.jar', False),
+        ('org.springframework.orm_2.5.6.SEC01.jar', False),
+        ('org.rifidi.org.springframework.context_2.5.6.SEC01.jar', False),
+        ('org.eclipse.equinox.weaving.hook_1.0.0.200905031323.jar', False) ]
         
- #         find the 
-        pass
+        bf_target_values = bfinder.target_platform.values()
+        self.assertEquals(targets.__len__(), bf_target_values.__len__())
+        for i in targets:
+            found = False
+            for j in bf_target_values:
+                if i == j[1:]:
+                    found = True
+                    bf_target_values.remove(j)
+            if not found:
+                print 'did not find ' + i
+                self.assertFalse(True)
+
+class TestSourceBundleFinder:
+    def testSourceBundleFind():
+        assert False
     
 
 ###############################################################################
