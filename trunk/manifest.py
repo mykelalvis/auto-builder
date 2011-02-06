@@ -15,9 +15,9 @@ def set_logger_level(logLevel):
 
 class Bundle:
     def __init__(self):
-        # these names get kind of tricky to remember.  Sometime, when I have
-        # some time, I'd like to clean this up, so it makes a bit more sense.
-        # For now, I'll just describe what they are.
+        # These variable names are more tricksey than I'm comfortable with.
+        # Sometime, when I have some time, I'd like to clean this up, so it
+        # makes a bit more sense. For now, I'll just describe what they are.
         
         # Sym_name is the name of bundle; version is the bundle's version and it
         # gets appended to the end of the jar file; root is the os path to the
