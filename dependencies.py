@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 #
-#    
 #    James Percent (james@empty-set.net)
 #    Copyright 2010, 2011 James Percent 
 # 
