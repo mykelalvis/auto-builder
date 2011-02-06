@@ -15,16 +15,17 @@ def set_logger_level(logLevel):
 
 class Bundle:
     def __init__(self):
-        # these names get kind of tricky to remember.  I'd like to clean this
-        # up so it makes a bit more sense when I get some time.  For now, I'll
-        # just leave these notes as to what they mean.  Sym_name is the name of
-        # bundle; version is the bundle's version and it gets appended to the
-        # end of the jar file; root is the os path to the src or jar file;
-        # jar indicates whether or not the bundle is a jar library or a source
-        # bundle; deps is a tree of dependent bundles (of type Bundle); extra_libs
-        # are a list of none OSGi jar files that are included; classpath is the
-        # transitively closed classpath of bundles; build level is the order in
-        # which the source bundles need to be built.
+        # these names get kind of tricky to remember.  Sometime, when I have
+        # some time, I'd like to clean this up, so it makes a bit more sense.
+        # For now, I'll just describe what they are.
+        
+        # Sym_name is the name of bundle; version is the bundle's version and it
+        # gets appended to the end of the jar file; root is the os path to the
+        # src or jar file; jar indicates whether or not the bundle is a jar
+        # library or a source bundle; deps is a tree of dependent bundles (of
+        # type Bundle); extra_libs are a list of none OSGi jar files that are
+        # included; classpath is the transitively closed classpath of bundles;
+        # build level is the order in which the source bundles need to be built.
         self.sym_name = ''
         self.ipackages = []
         self.epackages = []
