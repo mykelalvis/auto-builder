@@ -518,12 +518,11 @@ class manifest_test(unittest.TestCase):
 #
 # dependencies.py tests
 #
-
 class TestBinaryBundleFinder(unittest.TestCase):
         
     def testFind(self):
         bfinder = BinaryBundleFinder()
-        jar_path = [os.getcwd()]
+        jar_path = ['testlib']
         bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355', 'org.aspectj.weaver_1.6.4.20090304172355', 'org.syndeticlogic.gnu.io_2.1.7']
         bfinder.find(jar_path, bundle_dirs)
 
@@ -627,7 +626,7 @@ class TestBinaryBundleFinder(unittest.TestCase):
                 
     def testLoad(self):
         bfinder = BinaryBundleFinder()
-        jar_path = [os.getcwd()]
+        jar_path = ['testlib']
         bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355',
                        'org.aspectj.weaver_1.6.4.20090304172355',
                        'org.syndeticlogic.gnu.io_2.1.7']
@@ -799,10 +798,57 @@ class TestBinaryBundleFinder(unittest.TestCase):
                 print 'did not find ' + i
                 self.assertFalse(True)
 
-class TestSourceBundleFinder:
-    def testSourceBundleFind():
-        assert False
-    
+class TestSourceBundleFinder(unittest.TestCase):
+    def testFind(self):
+        sfinder = SourceBundleFinder()
+        src_path = ['org.syndeticlogic.minerva',
+                    'org.syndeticlogic.minerva.tools']
+        sfinder.find(src_path)
+            
+        srcs = [('org.syndeticlogic.minerva', 'META-INF', {}),
+         ('org.syndeticlogic.minerva.tools', 'META-INF',
+         {'org.syndeticlogic.minerva.tools/lib/spring-ws-1.5.9-all.jar': 'org.syndeticlogic.minerva.tools/lib/spring-ws-1.5.9-all.jar', 'org.syndeticlogic.minerva.tools/lib/jackson-mapper-asl-1.5.5.jar': 'org.syndeticlogic.minerva.tools/lib/jackson-mapper-asl-1.5.5.jar', 'org.syndeticlogic.minerva.tools/lib/jackson-core-asl-1.5.5.jar': 'org.syndeticlogic.minerva.tools/lib/jackson-core-asl-1.5.5.jar'})
+         ]
+        
+        src_manifests = sfinder.src_manifests
+        self.assertEquals(len(srcs), len(src_manifests))
+        for i in srcs:
+            found = False
+            for j in src_manifests:
+                if i == j:
+                    found = True
+                    src_manifests.remove(j)
+            if not found:
+                print 'did not find ' + i
+                self.assertFalse(True)                    
+            
+    def testLoad(self):
+        sfinder = SourceBundleFinder()
+        src_path = ['org.syndeticlogic.minerva',
+                    'org.syndeticlogic.minerva.tools']
+        sfinder.find(src_path)
+        sfinder.load()
+        src_bundles = [('org.syndeticlogic.minerva', {} ),
+                       ('org.syndeticlogic.minerva.tools', 
+                        { 
+        'org.syndeticlogic.minerva.tools/lib/spring-ws-1.5.9-all.jar': 
+            'org.syndeticlogic.minerva.tools/lib/spring-ws-1.5.9-all.jar', 
+        'org.syndeticlogic.minerva.tools/lib/jackson-mapper-asl-1.5.5.jar': 
+            'org.syndeticlogic.minerva.tools/lib/jackson-mapper-asl-1.5.5.jar',
+        'org.syndeticlogic.minerva.tools/lib/jackson-core-asl-1.5.5.jar':
+            'org.syndeticlogic.minerva.tools/lib/jackson-core-asl-1.5.5.jar'} )]
+        
+        bundles = sfinder.bundles
+        self.assertEquals(len(src_bundles), len(bundles))
+        for i in src_bundles:
+            found = False
+            for j in bundles:
+                if i[0] == j.sym_name and i[1] == j.extra_libs:
+                    found = True
+                    bundles.remove(j)
+            if not found:
+                print 'did not find ' + i
+                self.assertFalse(True)                            
 
 ###############################################################################
 #
@@ -985,7 +1031,7 @@ class AntGeneratorTest(unittest.TestCase):
         return (jars, src, target_platform, writer)
         
     def test_generator(self):
-        print 'test generator'
+        #print 'test generator'
         jars, src, target_platform, writer = self.generate_stubs()
         gen = AntGenerator("test", jars, src, target_platform, './', writer)
         gen.generate_build_files()

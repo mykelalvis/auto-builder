@@ -15,6 +15,7 @@ from optparse import OptionParser
 from os.path import join, abspath
 from generator import AntGenerator, FileWriter
 from dependencies import BinaryBundleFinder
+from dependencies import SourceBundleFinder
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -381,7 +382,7 @@ def load_jars():
     return jfinder
     
 def load_src():
-    sfinder = Src()
+    sfinder = SourceBundleFinder()
     sfinder.find(src_path)
     sfinder.load()
     return sfinder

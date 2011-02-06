@@ -95,7 +95,6 @@ class BinaryBundleFinder:
 class SourceBundleFinder:
     def __init__(self):
         self.src_manifests = []
-        self.src_files = []
         self.bundles = []
 
     def find_libs(self, path):
@@ -144,8 +143,6 @@ class SourceBundleFinder:
                         manifest = (root, dir)
                     if dir == 'lib':
                         libs = self.find_libs(join(root, dir))
-                        #print libs
-                        #assert False
                         
                 manifest += (libs,)
                 self.src_manifests.append(manifest)
