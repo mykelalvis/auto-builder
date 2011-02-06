@@ -321,7 +321,12 @@ class Src:
                 manifest += (libs,)
                 self.src_manifests.append(manifest)
                     
-                    
+def set_logger_level(log_level):
+    logger.setLevel(log_level)
+    dependencies.set_logger_level(log_level)
+    generator.set_logger_level(log_level)
+    manifest.set_logger_level(log_level)
+
 class Parameters:
     def __init__(self):
         self.args = None
@@ -361,27 +366,18 @@ class Parameters:
                          'warn' : logging.WARN, 'error' : logging.ERROR,
                          'critical' : logging.CRITICAL}    
             
-        if self.options.loglevel != None:
-            if self.options.loglevel in valid_levels:
-                logger.setLevel(valid_levels[self.options.loglevel])
-                dependencies.set_logger_level(valid_levels[self.options.loglevel])
-                generator.set_logger_level(valid_levels[self.options.loglevel])
-                manifest.set_logger_level(valid_levels[self.options.loglevel]) 
-            else:
+        if self.options.loglevel != None and self.options.loglevel in valid_levels:
+            set_logger_level(valid_levels[self.options.loglevel])
+        else:
+            if self.options.loglevel:
                 logger.error('Invalid log level: '+self.options.loglevel+ \
                              ' using default, which is WARN')
-                self.options.loglevel = None
-        
-        if not self.options.loglevel:
-            logger.setLevel(valid_levels['warn'])
-            dependencies.set_logger_level(valid_levels['warn'])
-            generator.set_logger_level(valid_levels['warn'])
-            manifest.set_logger_level(valid_levels['warn'])
+            set_logger_level(logging.WARN)
             
 def load_jars():
     jfinder = BinaryBundleFinder()
-    jfinder.find(jar_path)
-    jfinder.load()
+    jfinder.find(jar_path, bundle_dirs)
+    jfinder.load(do_not_package_libs)
     return jfinder
     
 def load_src():

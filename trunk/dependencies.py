@@ -21,8 +21,9 @@ import os
 import manifest
 import subprocess
 import logging
+import tempfile
+import shutil
 from os.path import join, abspath
-from conf import project_name, jar_path, src_path, bundle_dirs, do_not_package_libs
 
 logger = logging.getLogger(__name__)
 def set_logger_level(logLevel):
@@ -35,16 +36,22 @@ class BinaryBundleFinder:
         self.unique_bundles = {}
         self.target_platform = {}
         
-    def load(self):
+    def load(self, do_not_package_libs):
+        tmp = tempfile.mkdtemp()
+        #print tmp
         for root, file in self.jar_files:
-            ret = subprocess.call(['cp', join(root, file), '/tmp'])
+            shutil.copy(join(root, file), tmp)
         cdir = os.getcwd()
-        os.chdir('/tmp')
+
         for root, file in self.jar_files:
-            ret = subprocess.call(['jar', 'xf', file, 'META-INF/MANIFEST.MF'])
+            os.chdir(tmp)
+            ret = subprocess.call(['jar', 'xf', join(tmp,file),
+                                   join('META-INF','MANIFEST.MF')])
             assert ret == 0
-            manifest_des = open('META-INF/MANIFEST.MF', 'r')
+            os.chdir(cdir)
+            manifest_des = open(join(tmp, 'META-INF','MANIFEST.MF'), 'r')
             manifest_file = manifest_des.read()
+            shutil.rmtree(join(tmp, 'META-INF'))
             logger.debug(manifest_file)
             parser = manifest.ManifestParser()
             bundle = parser.parse(manifest_file)
@@ -65,15 +72,14 @@ class BinaryBundleFinder:
             if not(bundle.file in do_not_package_libs):
                 self.target_platform[join(bundle.root,bundle.file)] =\
                     (bundle.root, bundle.file, False)
-                
-        os.chdir(cdir)
+        shutil.rmtree(tmp)
             
     def display(self):
         for i in self.bundles:
             i.display()
             print '-'*80
         
-    def find(self, jar_path):
+    def find(self, jar_path, bundle_dirs):
         for i in jar_path:
             logger.debug('jar_path: '+str(i))
             for root, dirs, files in os.walk(i):
@@ -86,12 +92,12 @@ class BinaryBundleFinder:
                         
                         
        
-class SrcBundleFinder:
+class SourceBundleFinder:
     def __init__(self):
         self.src_manifests = []
         self.src_files = []
         self.bundles = []
-        
+
     def find_libs(self, path):
         libs = {}
         for root, dirs, files in os.walk(path):

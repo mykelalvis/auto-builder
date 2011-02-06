@@ -294,7 +294,7 @@ class Ast:
             assert len(p[1]) == 1 or p[3] == None
             if p[3] != None:
                 assert len(p[3]) == 4
-                logger.debug(p[1], p[3])
+                logger.debug(str(p[1]) + ' '+ str(p[3]))
                 p[1][0].set_version_range(p[3][0], p[3][1], p[3][2], p[3][3])
             p[0] = p[1]
                
