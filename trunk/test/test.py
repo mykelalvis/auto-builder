@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-
-#!/usr/bin/env python
 #
 #    This module contains the unit tests for the auto builder tools.
 #
