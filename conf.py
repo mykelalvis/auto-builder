@@ -18,34 +18,39 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
 #
-# Auto Builder configuration settings
-#
-################################################################################
+# Default auto-builder configuration
 
 project_name = 'Minerva'
 
-jar_path = [
-'../Minerva-SDK/lib/']
-
-bundle_dirs = [
-'org.aspectj.runtime_1.6.4.20090304172355',
-'org.aspectj.weaver_1.6.4.20090304172355',
-'org.syndeticlogic.gnu.io_2.1.7'
+library_path = [
+    '../Minerva-SDK/lib/'
 ]
 
-src_path = [
-'../org.syndeticlogic.minerva',
-'../org.syndeticlogic.minerva.adapters',
-'../org.syndeticlogic.minerva.init',
-'../org.syndeticlogic.minerva.tools'
+#bundle_dirs = [
+#'org.aspectj.runtime_1.6.4.20090304172355',
+#'org.aspectj.weaver_1.6.4.20090304172355',
+#'org.syndeticlogic.gnu.io_2.1.7'
+#]
+
+source_path = [
+    '../org.syndeticlogic.minerva',
+    '../org.syndeticlogic.minerva.adapters',
+    '../org.syndeticlogic.minerva.init',
+    '../org.syndeticlogic.minerva.tools'
 ]
 
-do_not_package_libs = [
-'com.springsource.org.junit_4.8.1.jar',
-'org.syndeticlogic.gnu.io_2.1.7.jar'
-]
+#    '../org.syndeticlogic.minerva',
+#    '../org.syndeticlogic.minerva.adapters',
+#    '../org.syndeticlogic.minerva.init',
+#    '../org.syndeticlogic.minerva.tools'
+#]
+
+
+#do_not_package_libs = [
+#'com.springsource.org.junit_4.8.1.jar',
+#'org.syndeticlogic.gnu.io_2.1.7.jar'
+#]
 
 ################################################################################
 #

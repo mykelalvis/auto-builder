@@ -23,12 +23,13 @@ import logging.config
 logging.config.fileConfig('logger.config')
 
 import os
+import sys
+import conf
 import manifest
 import subprocess
 import dependencies
 import generator
 
-from conf import project_name, jar_path, src_path, bundle_dirs, do_not_package_libs
 from optparse import OptionParser
 from os.path import join, abspath
 from generator import AntGenerator, FileWriter
@@ -37,9 +38,7 @@ from dependencies import SourceBundleFinder
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
-
-#import dependencies
-
+    
 class Dep:
     def __init__(self, jars, src, target):
         self.jars = jars
@@ -216,129 +215,6 @@ class Dep:
         #assert False
         return True
         
-        
-class Jars:
-    def __init__(self):
-        self.jar_files = []
-        self.bundles = []
-        self.unique_bundles = {}
-        self.target_platform = {}
-        
-    def load(self):
-        for root, file in self.jar_files:
-            ret = subprocess.call(['cp', join(root, file), '/tmp'])
-        cdir = os.getcwd()
-        os.chdir('/tmp')
-        for root, file in self.jar_files:
-            ret = subprocess.call(['jar', 'xf', file, 'META-INF/MANIFEST.MF'])
-            assert ret == 0
-            manifest_des = open('META-INF/MANIFEST.MF', 'r')
-            manifest_file = manifest_des.read()
-            #print manifest_file
-            parser = manifest.ManifestParser()
-            bundle = parser.parse(manifest_file)
-            bundle.root = root
-            bundle.file = file
-            bundle.is_binary_bundle = True
-            if bundle.sym_name == '':
-                #print 'Bundle '+join(root, file)+' has no symbolic name; skipping it'
-                if not (bundle.file == 'aspectjrt.jar' or \
-                        bundle.file == 'aspectjweaver.jar' or\
-                        bundle.file == 'cglib-nodep_2.2.jar' or \
-                        bundle.file == 'RXTXcomm.jar'):
-                        
-                    print '------------------------------------------------------------------------------------>'+str(bundle.file)+'<---'
-                    assert False
-                    
-                continue
-                
-
-                
-            assert bundle.sym_name != ''
-            assert not bundle.sym_name in self.unique_bundles
-            self.unique_bundles[bundle.sym_name] = bundle
-            self.bundles.append(bundle)
-            if not(bundle.file in do_not_package_libs):
-                self.target_platform[join(bundle.root,bundle.file)] =\
-                    (bundle.root, bundle.file, False)
-                
-        os.chdir(cdir)
-            
-    def display(self):
-        for i in self.bundles:
-            i.display()
-            print '-'*80
-        
-    def find(self, jar_path):
-        for i in jar_path:
-            #print 'jar_path: ', i
-            for root, dirs, files in os.walk(i):
-                for dir in dirs:
-                    if dir in bundle_dirs:
-                        self.target_platform[join(root,dir)] = (root, dir, True)
-                for file in files:
-                    if file.endswith(r'.jar'):
-                        self.jar_files.append((root, file))
-                        
-                        
-       
-class Src:
-    def __init__(self):
-        self.src_manifests = []
-        self.src_files = []
-        self.bundles = []
-        
-    def find_libs(self, path):
-        libs = {}
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file.endswith(r'.jar'):
-                    libs[join(root, file)] = join(root, file)
-        return libs
-        
-    def load(self):
-        for root, dir, libs in self.src_manifests:
-            #print join(root, dir, 'MANIFEST.MF')
-            manifest_des = open(join(root, dir, 'MANIFEST.MF'), 'r')
-            manifest_file = manifest_des.read()
-            #print manifest_file
-            parser = manifest.ManifestParser()
-            bundle = parser.parse(manifest_file)
-            bundle.root = root
-            #print bundle, bundle.sym_name
-            if libs.keys().__len__() > 0:
-                #print libs
-                bundle.extra_libs = libs
-                #assert False
-            self.bundles.append(bundle)
-            
-    def display(self):
-        for i in self.bundles:
-            i.display()
-            print '-'*80
-        
-    def find(self, src_path):
-        for i in src_path:
-            for root, dirs, files in os.walk(i):
-                libs = {}
-                manifest = ()
-                manifest_found = False
-                
-                if 'META-INF' in dirs:
-                    manifest_found = True
-                else:
-                    continue
-                    
-                for dir in dirs:
-                    if dir == 'META-INF':
-                        manifest = (root, dir)
-                    if dir == 'lib':
-                        libs = self.find_libs(join(root, dir))
-                        #print libs
-                        #assert False
-                        
-                manifest += (libs,)
-                self.src_manifests.append(manifest)
                     
 def set_logger_level(log_level):
     logger.setLevel(log_level)
@@ -351,30 +227,53 @@ class Parameters:
         self.args = None
         self.options = None
         self.parser = OptionParser(version="%prog 1.3.37")
-        display_jars_help = 'Display Java archives'
-        display_src_help = 'Display sources'
-        check_dep_help = 'Check dependencies'
-        build_gen_help = 'Generate build artifacts'
-        loglevel_help = 'set the logging level; valid values are debug, info, '\
-                        'warn, error and critical'
 
+        display_jars_help = 'Displays bundles found on the library_path.'
+        display_src_help = 'Display source bundles found on the source_path.'
+        check_dep_help = 'Validates dependencies without generating build artifacts.'
+        build_gen_help = 'Validate dependencies and generate build artifacts.'
+        loglevel_help = 'Set the logging level; valid values are debug, info, '\
+                        'warn, error and critical'
+        
+        lib_path_help = 'A colon separated list of valid root directories to search '\
+                        'for binary bundles (in PDE speak this equates to the search '\
+                        'path to bundles in the target platform); overrides the '\
+                        'library_path defined in conf.py.'
+        
+        src_path_help = 'A colon separated list of valid root directories to search '\
+                        'for source bundles; overrides the '\
+                        'source_path defined in conf.py.'
+        
+        project_name_help = 'Specifies the name to use in the generated '\
+                                 'content; overrides the project_name defined '\
+                                 'in conf.py'        
+                
         #; if no options are given, '\
         #                 'then this command is executed; supported values'\
         #                 ' are: ant, make, maven; default value is: ant.'
+        self.parser.add_option('-l', '--logging-level', dest='loglevel',
+                               metavar='LEVEL', help=loglevel_help)
         self.parser.add_option("-j", "--display-jars", action="store_true",
                                 default=False, dest="display_jars",
                                 help=display_jars_help)
-        self.parser.add_option("-s", "--display-src", action="store_true",
+        self.parser.add_option("-d", "--display-src", action="store_true",
                                 default=False, dest="display_src",
                                 help=display_src_help)
         self.parser.add_option("-c", "--check-dep", action="store_true",
                                default=False, dest="check_dep",
                                help=check_dep_help)
-        self.parser.add_option('-l', '--logging-level', dest='loglevel',
-                               metavar='LEVEL', help=loglevel_help)
         self.parser.add_option("-b", "--build-gen", action="store_true",
                                default=False, dest="build_gen",
                                help=build_gen_help)
+        self.parser.add_option("-p", "--lib-path", default='', type=str,
+                               dest="library_path", metavar="PATH", 
+                               help=lib_path_help)
+        self.parser.add_option("-s", "--source-path", default='', type=str,
+                               dest="source_path", metavar="PATH", 
+                               help=src_path_help)
+        self.parser.add_option("-n", "--project-name", default='', type=str,
+                               dest="project_name", metavar="NAME", 
+                               help=project_name_help)
         #self.parser.add_option("-g", "--gen-build",
         #              dest="gen_build", metavar="BUILD-TYPE", type=str,
         #              default='ant', help=gen_build_help)
@@ -392,14 +291,59 @@ class Parameters:
                 logger.error('Invalid log level: '+self.options.loglevel+ \
                              ' using default, which is WARN')
             set_logger_level(logging.WARN)
-            
-def load_jars():
+        
+        if self.options.library_path != '':
+            self.options.jar_path = self.options.library_path.split(':')
+            print self.options.jar_path
+        else:
+            try:
+                self.options.jar_path = conf.library_path
+            except:
+                logger.critical('Library path is not defined; exiting.')
+                self.parser.print_help()
+                raise Exception('Library path is not defined; exiting.')
+        
+        if not validate('library path', self.options.jar_path):
+            logger.critical('All library path directories must be validate; exiting')
+            raise Exception('All library path directories must be validate; exiting')
+        
+        if self.options.source_path != '':
+            self.options.src_path = self.options.source_path.split(':')
+            print self.options.src_path
+        else:
+            try:
+                self.options.src_path = conf.source_path
+            except:
+                logger.critical('Source path is not defined; exiting.')
+                self.parser.print_help()
+                raise Exception('Source path is not defined; exiting.')
+
+        
+        if not validate('source path', self.options.src_path):
+            logger.critical('All source path directories must be validate; exiting')
+            raise Exception('All source path directories must be validate; exiting')
+        
+        if self.options.project_name == '':
+            try:
+                self.options.project_name = conf.project_name
+            except:
+                logger.info('Project name is not defined.')
+    
+def validate(name, path):
+    print path
+    for dir in path:
+        if not os.path.isdir(dir):
+            logger.error('Invalid directory on the '+name+': '+dir)
+            return False
+    return True
+
+def load_jars(jar_path):
     jfinder = BinaryBundleFinder()
-    jfinder.find(jar_path, bundle_dirs)
-    jfinder.load(do_not_package_libs)
+    jfinder.find(jar_path)
+    jfinder.load()
     return jfinder
     
-def load_src():
+def load_src(src_path):
     sfinder = SourceBundleFinder()
     sfinder.find(src_path)
     sfinder.load()
@@ -415,7 +359,9 @@ def convert_paths(jar_path, src_path):
         src_path[index] = abspath(path)
         index += 1
         
+
 if __name__ == '__main__':
+
     jars = None
     src = None
     deps = None
@@ -424,23 +370,23 @@ if __name__ == '__main__':
     
     if params.options.display_jars:
         print '-'*80
-        jars = load_jars()
+        jars = load_jars(params.options.jar_path)
         jars.display()
         cmd_set = True
  
     if params.options.display_src:
         if not cmd_set:
             print '-'*80
-        src = load_src()
+        src = load_src(params.options.src_path)
         src.display()
         cmd_set = True
         
     if params.options.check_dep:
         if not jars:
-            jars = load_jars()
+            jars = load_jars(params.options.jar_path)
                
         if not src:
-            src = load_src()
+            src = load_src(params.options.src_path)
                 
         #jars.display()
         #src.display()
@@ -452,10 +398,10 @@ if __name__ == '__main__':
         
     if params.options.build_gen or not cmd_set:
         if jars == None:
-            jars = load_jars()
+            jars = load_jars(params.options.jar_path)
                
         if src == None:
-            src = load_src()
+            src = load_src(params.options.src_path)
                 
         if deps == None:
             deps = Dep(jars, src, jars.target_platform)
@@ -463,10 +409,6 @@ if __name__ == '__main__':
             assert deps.sort()
             
         writer = FileWriter()
-        gen = AntGenerator(project_name, deps.jars, deps.src.bundles,
+        gen = AntGenerator(params.options.project_name, deps.jars, deps.src.bundles,
                            deps.target_platform, '.', writer)
         gen.generate_build_files()
-        
-    #else:
-    #    params.parser.print_version()
-    #    params.parser.print_help()

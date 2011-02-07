@@ -47,7 +47,12 @@ class AntGenerator:
                
             for lib in bundle.extra_libs.keys():
                 bundle.classpath[lib] = lib
-                
+
+            if bundle.binary_bundle_dir:    
+                for lib in bundle.classpath_jars:
+                    qlib = join(bundle.root, bundle.file, lib)
+                    bundle.classpath[qlib] = qlib
+            
             for dep in bundle.deps:
                 if dep.classpath == None:
                     self.__build_classpath__(dep)

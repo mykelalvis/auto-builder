@@ -48,6 +48,19 @@ class manifest_test(unittest.TestCase):
         v.set_micro(mic)
         v.set_qual(qual)
         return v
+    
+    def test_bundle_dir_manifest(self):
+        test_manifest_file = open(\
+            './gnu_io.manifest.mf', 'r')
+        test = test_manifest_file.read()
+        parser = ManifestParser()
+        bundle = parser.parse(test)
+        #print bundle.epackages[0].name, bundle.classpath_jars
+        self.assertEquals(1, bundle.epackages.__len__())
+        self.assertEquals('gnu.io', bundle.epackages[0].name)
+        classpath_jars = set(bundle.classpath_jars)
+        self.assertTrue('RXTXcomm.jar' in classpath_jars)
+        self.assertTrue('../RXTXcomm-1.1.jar' in classpath_jars)
         
     def test_manifest_parser(self):
         test_manifest_file = open(\
@@ -392,124 +405,196 @@ class manifest_test(unittest.TestCase):
 #
 # auto_builder.py Tests
 #
+class ParametersTest(unittest.TestCase):
+    def testLogLevels(self):
+        conf.library_path = [os.getcwd()]
+        conf.source_path = [os.getcwd()]        
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.WARN, auto_builder.logger.getEffectiveLevel())
+        
+        sys.argv = [sys.argv[0], '-l', 'debug']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.DEBUG, auto_builder.logger.getEffectiveLevel())
+        
+        sys.argv = [sys.argv[0], '-l', 'info']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.INFO, auto_builder.logger.getEffectiveLevel())
+        
+        sys.argv = [sys.argv[0], '-l', 'warn']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.WARN, auto_builder.logger.getEffectiveLevel())
+        
+        sys.argv = [sys.argv[0], '-l', 'error']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.ERROR, auto_builder.logger.getEffectiveLevel())
+        
+        sys.argv = [sys.argv[0], '-l', 'critical']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.CRITICAL, auto_builder.logger.getEffectiveLevel())
+    
+        sys.argv = [sys.argv[0], '-l', 'notaloglevel']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.WARN, auto_builder.logger.getEffectiveLevel())
+        
+        sys.argv = [sys.argv[0], '-l', 'stillnotaloglevel']
+        params = auto_builder.Parameters()
+        self.assertEquals(logging.WARN, auto_builder.logger.getEffectiveLevel())
+    
+    
+    def testOptions(self):
+        conf.library_path = [os.getcwd()]
+        conf.source_path = [os.getcwd()]
+        conf.project_name = ''
+        sys.argv = [sys.argv[0], '-j']
+        params = auto_builder.Parameters()
+        self.assertEquals(True, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(False, params.options.build_gen)
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-j', '-d']
+        params = auto_builder.Parameters()
+        self.assertEquals(True, params.options.display_jars)
+        self.assertEquals(True, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(False, params.options.build_gen)
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-c']
+        params = auto_builder.Parameters()
+        self.assertEquals(False, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(True, params.options.check_dep)
+        self.assertEquals(False, params.options.build_gen)
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-b']
+        params = auto_builder.Parameters()
+        self.assertEquals(False, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(True, params.options.build_gen)
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-b', '-p', '.']
+        params = auto_builder.Parameters()
+        self.assertEquals(False, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(True, params.options.build_gen)
+        self.assertEquals('.', params.options.library_path)
+        self.assertEquals('', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-j', '-s', '.']
+        params = auto_builder.Parameters()
+        self.assertEquals(True, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(False, params.options.build_gen)
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('.', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-j', '-s', '.', '-p', '.']
+        params = auto_builder.Parameters()
+        self.assertEquals(True, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(False, params.options.build_gen)
+        self.assertEquals('.', params.options.library_path)
+        self.assertEquals('.', params.options.source_path)
+        self.assertEquals('', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-b', '-n', 'james-r0x0rz']
+        params = auto_builder.Parameters()
+        self.assertEquals(False, params.options.display_jars)
+        self.assertEquals(False, params.options.display_src)
+        self.assertEquals(False, params.options.check_dep)
+        self.assertEquals(True, params.options.build_gen)
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('', params.options.source_path)
+        self.assertEquals('james-r0x0rz', params.options.project_name)
+        
+        sys.argv = [sys.argv[0], '-j']
+        
+        conf.library_path = 'lkjadslfjks#1@@!@!!%%(@*!*!()(0adflajjaldf'
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertTrue(caught)
+        
+        conf.library_path = '.'
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertFalse(caught)
+        
+        conf.source_path = 'lkjadslfjks#1@@!@!!%%(@*!*!()(0adflajjaldf'
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertTrue(caught)
+        
+        conf.source_path = '.'
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertFalse(caught)
+        
+        bad_name = 'alkdfjoi?##@!#*!?91039102*Ulkajdlfaj8ie'
+        sys.argv = [sys.argv[0], '-j', '-s',
+                    bad_name, '-p', '.']
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertTrue(caught)
 
-#class ParametersTest(unittest):
-    #def testLogLevels(self):
-    #    
-    #    params = Parameters()
-    #    self.assertEquals(logging.WARN, logger.getEffectiveLevel())
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'debug']
-    #    params = Parameters()
-    #    self.assertEquals(logging.DEBUG, logger.getEffectiveLevel())
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'info']
-    #    params = Parameters()
-    #    self.assertEquals(logging.INFO, logger.getEffectiveLevel())
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'warn']
-    #    params = Parameters()
-    #    self.assertEquals(logging.WARN, logger.getEffectiveLevel())
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'error']
-    #    params = Parameters()
-    #    self.assertEquals(logging.ERROR, logger.getEffectiveLevel())
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'critical']
-    #    params = Parameters()
-    #    self.assertEquals(logging.CRITICAL, logger.getEffectiveLevel())
-    #
-    #    sys.argv = [sys.argv[0], '-l', 'notaloglevel']
-    #    params = Parameters()
-    #    self.assertEquals(logging.CRITICAL, logger.getEffectiveLevel())
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'stillnotaloglevel']
-    #    params = Parameters()
-    #    self.assertEquals(logging.CRITICAL, logger.getEffectiveLevel())
-    #
-    #
-    #def testOptions(self):
-    #
-    #    sys.argv = [sys.argv[0], '-d']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(True, params.options.debug)
-    #    self.assertEquals(10, params.options.count)
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '--debug']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(True, params.options.debug)
-    #    self.assertEquals(10, params.options.count)
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '--debug']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(True, params.options.debug)
-    #    self.assertEquals(10, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '-t']
-    #    params = Parameters()
-    #    self.assertEquals(True, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(False, params.options.debug)
-    #    self.assertEquals(10, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '--test', '-c', '1337']
-    #    params = Parameters()
-    #    self.assertEquals(True, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(False, params.options.debug)
-    #    self.assertEquals(1337, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '-i', '--count=31337']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(True, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(False, params.options.debug)
-    #    self.assertEquals(31337, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '--ip-frequency']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(True, params.options.ip_frequency)
-    #    self.assertEquals(None, params.options.loglevel)
-    #    self.assertEquals(False, params.options.debug)
-    #    self.assertEquals(10, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '-l', 'debug']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals('debug', params.options.loglevel)
-    #    self.assertEquals(False, params.options.debug)
-    #    self.assertEquals(10, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
-    #    
-    #    sys.argv = [sys.argv[0], '--logging-level=warn']
-    #    params = Parameters()
-    #    self.assertEquals(False, params.options.test)
-    #    self.assertEquals(False, params.options.ip_frequency)
-    #    self.assertEquals('warn', params.options.loglevel)
-    #    self.assertEquals(False, params.options.debug)
-    #    self.assertEquals(10, params.options.count)        
-    #    self.assertEquals(0, len(params.args))
+        sys.argv = [sys.argv[0], '-j', '-s',
+                    bad_name, '-p', bad_name]
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertTrue(caught)
+
+
+        sys.argv = [sys.argv[0], '-j', '-s', '.', '-p', bad_name]
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertTrue(caught)
+
+
+        sys.argv = [sys.argv[0], '-j', '-s', '.', '-p', '.']
+        caught = False
+        try:
+            params = auto_builder.Parameters()
+        except:
+            caught = True
+        self.assertFalse(caught)
 
 
 ###############################################################################
@@ -521,8 +606,7 @@ class TestBinaryBundleFinder(unittest.TestCase):
     def testFind(self):
         bfinder = BinaryBundleFinder()
         jar_path = ['testlib']
-        bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355', 'org.aspectj.weaver_1.6.4.20090304172355', 'org.syndeticlogic.gnu.io_2.1.7']
-        bfinder.find(jar_path, bundle_dirs)
+        bfinder.find(jar_path)
 
         files = ['aspectjrt.jar',\
         'aspectjweaver.jar',\
@@ -610,6 +694,7 @@ class TestBinaryBundleFinder(unittest.TestCase):
         
 #        print bfinder.target_platform
         tp_values = bfinder.target_platform.values()
+        bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355', 'org.aspectj.weaver_1.6.4.20090304172355', 'org.syndeticlogic.gnu.io_2.1.7']
         self.assertEqual(bundle_dirs.__len__(), tp_values.__len__())
         for i in bundle_dirs:
             found = False
@@ -625,15 +710,13 @@ class TestBinaryBundleFinder(unittest.TestCase):
     def testLoad(self):
         bfinder = BinaryBundleFinder()
         jar_path = ['testlib']
-        bundle_dirs = ['org.aspectj.runtime_1.6.4.20090304172355',
-                       'org.aspectj.weaver_1.6.4.20090304172355',
-                       'org.syndeticlogic.gnu.io_2.1.7']
-        do_not_package_libs = ['com.springsource.org.junit_4.8.1.jar',
-                            'org.syndeticlogic.gnu.io_2.1.7.jar']
-        bfinder.find(jar_path, bundle_dirs)
-        bfinder.load(do_not_package_libs)
+        bfinder.find(jar_path)
+        bfinder.load()
 
-        bundles = ['com.springsource.javax.annotation',
+        bundles = ['org.aspectj.runtime',
+        'org.aspectj.weaver',
+        'org.syndeticlogic.gnu.io',
+        'com.springsource.javax.annotation',
         'com.springsource.javax.ejb',
         'com.springsource.javax.el',
         'com.springsource.javax.persistence',
@@ -709,7 +792,20 @@ class TestBinaryBundleFinder(unittest.TestCase):
             for j in bf_bundles:
                 if i == j.sym_name:
                     found = True
-                    bf_bundles.remove(j)            
+                    bf_bundles.remove(j)
+                    if i == 'org.aspectj.runtime':
+                        self.assertTrue(j.binary_bundle_dir)
+                        self.assertEquals(1, j.classpath_jars.__len__())
+                        self.assertEquals('aspectjrt.jar', j.classpath_jars[0])
+                    elif i == 'org.aspectj.weaver':
+                        self.assertTrue(j.binary_bundle_dir)
+                        self.assertEquals(1, j.classpath_jars.__len__())
+                        self.assertEquals('aspectjweaver.jar', j.classpath_jars[0])
+                    elif i == 'org.syndeticlogic.gnu.io':
+                        self.assertTrue(j.binary_bundle_dir)
+                        self.assertEquals(1, j.classpath_jars.__len__())
+                        self.assertEquals('RXTXcomm.jar', j.classpath_jars[0])
+
             if not found:
                 print 'did not find ' + i
                 self.assertFalse(True)
@@ -782,7 +878,8 @@ class TestBinaryBundleFinder(unittest.TestCase):
         ('com.springsource.org.apache.jasper_6.0.18.jar', False),
         ('org.springframework.orm_2.5.6.SEC01.jar', False),
         ('org.rifidi.org.springframework.context_2.5.6.SEC01.jar', False),
-        ('org.eclipse.equinox.weaving.hook_1.0.0.200905031323.jar', False) ]
+        ('org.eclipse.equinox.weaving.hook_1.0.0.200905031323.jar', False),
+        ('com.springsource.org.junit_4.8.1.jar', False)]
         
         bf_target_values = bfinder.target_platform.values()
         self.assertEquals(targets.__len__(), bf_target_values.__len__())
@@ -795,7 +892,7 @@ class TestBinaryBundleFinder(unittest.TestCase):
             if not found:
                 print 'did not find ' + i
                 self.assertFalse(True)
-
+                
 class TestSourceBundleFinder(unittest.TestCase):
     def testFind(self):
         sfinder = SourceBundleFinder()
