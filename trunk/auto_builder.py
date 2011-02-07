@@ -20,7 +20,11 @@
 #
 import logging
 import logging.config
-logging.config.fileConfig('logger.config')
+try:
+    logging.config.fileConfig('logger.config')
+except:
+    pass
+logging.config.string
 
 import os
 import sys
@@ -100,13 +104,13 @@ class Dep:
         h4x0r = True
         while h4x0r:
             h4x0r = False
-            for bundle in src.bundles:
+            for bundle in self.src.bundles:
                 if self.__partially_order__(bundle):
                     h4x0r = True
                    
-        src.bundles = sorted(src.bundles, key=lambda bundle : bundle.build_level)
+        self.src.bundles = sorted(self.src.bundles, key=lambda bundle : bundle.build_level)
         
-        for bundle in src.bundles:
+        for bundle in self.src.bundles:
             #print bundle.sym_name, bundle.build_level
             pass
         
@@ -115,7 +119,7 @@ class Dep:
     def resolve(self):
         exports = {}
         bundles = {}
-        for bundle in src.bundles:
+        for bundle in self.src.bundles:
             print bundle.sym_name
             assert not bundle.sym_name in bundles 
             bundles[bundle.sym_name] = bundle
@@ -126,7 +130,7 @@ class Dep:
         
         #print bundles
             
-        for bundle in jars.bundles:
+        for bundle in self.jars.bundles:
             #print '--->'+str(bundle.sym_name)+'<---', bundle
             if not bundle.sym_name in bundles:
                 bundles[bundle.sym_name] = bundle
@@ -143,7 +147,7 @@ class Dep:
         #print bundles
         required_jars = {}
         # package.name = [(pacakge, bundle), (package, bundle)]
-        for bundle in src.bundles:
+        for bundle in self.src.bundles:
             
             if bundle.fragment:
                 assert bundle.fragment_host.name in bundles
@@ -360,8 +364,8 @@ def convert_paths(jar_path, src_path):
         index += 1
         
 
-if __name__ == '__main__':
-
+def run():
+    
     jars = None
     src = None
     deps = None
