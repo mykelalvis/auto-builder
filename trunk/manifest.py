@@ -55,10 +55,11 @@ class Bundle:
         self.fragment = False
         self.fragment_host = None
         self.deps = {}
-        self.extra_libs = None
         self.build_level = 0
         self.classpath = None
         self.extra_libs = {}
+        self.binary_bundle_dir = False
+        self.classpath_jars = None
         
     def add_ipackage(self, i):
         self.ipackages.append(i)
@@ -253,7 +254,7 @@ class Ast:
         if len(p) == 3:
             self.bundle.sym_name = p[2]
             #self.bundle.sym_name        
-            
+        
     def bundle_version(self, p):
         assert len(p) == 3
         if isinstance(p[2], Version): 
@@ -480,6 +481,11 @@ class ManifestParser:
                  | fragment_host'''
         pass
 
+#    def p_bundle_classpath(self, p):
+#        '''bundle_classpath : BUNDLE_CLASSPATH TOKEN DOT ID
+#                  | BUNDLE_CLASSPATH ID DOT ID'''
+#        self.ast.bundle_classpath(p)
+
     def p_fragment_host(self, p):
         '''fragment_host : FRAGMENT_HOST package_name
                         | FRAGMENT_HOST package_name SEMI_COLON parameter'''
@@ -614,11 +620,10 @@ class ManifestParser:
     
     def parse(self, manifest):
         assert manifest != None
-
-        manifest = re.sub(r'\r','',  manifest)        
-        #manifest = re.sub(r'\r\n ', '', manifest)
+        # remove \r if it's there...
+        manifest = re.sub(r'\r','',  manifest)
+        #concat multi line headers, which makes parsing simplier
         manifest = re.sub(r'\n ', '', manifest)
-        #headers = re.split(r'\r\n', manifest)
         headers = re.split(r'\n', manifest)
 
         self.ast = Ast() 
@@ -630,14 +635,33 @@ class ManifestParser:
                 or header.startswith('Require-Bundle:') \
                 or header.startswith('Bundle-SymbolicName:') \
                 or header.startswith('Fragment-Host:') \
+                or header.startswith('Bundle-ClassPath:') \
                 or header.startswith('Bundle-Version:'):
-                #if header.startswith('Bundle-Version:'):
-                #    print header
+                
                 # h4x0r
+                if header.startswith('Bundle-ClassPath:'):
+                    firstSplit = header.split(':')[1:]
+#                    print firstSplit
+                    assert firstSplit.__len__() == 1
+                    classPathValues = firstSplit[0].split(',')
+                    
+                    for index in range(0, classPathValues.__len__()):
+                        classPathValues[index] = \
+                          classPathValues[index].replace(' ', '')
+                        #print classPathValues[index], classPathValues[index].endswith('.jar')                         
+                        if not classPathValues[index].endswith('.jar'):
+                            if len(classPathValues) == 1:
+                                continue
+                            else:
+                                classPathValues.remove(classPathValues[index])
+                            
+                    self.ast.bundle.classpath_jars = classPathValues
+                    continue
+                    
+                # h4x0r                    
                 if header.startswith('Require-Bundle:') \
                     or header.startswith('Fragment-Host:'):
                     header = re.sub(r'bundle-', '', header)
-                #print header
                 
                 yacc.parse(header)
                 parsed = True

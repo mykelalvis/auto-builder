@@ -36,13 +36,33 @@ class BinaryBundleFinder:
         self.unique_bundles = {}
         self.target_platform = {}
         
-    def load(self, do_not_package_libs):
+    def load(self):
         tmp = tempfile.mkdtemp()
         #print tmp
         for root, file in self.jar_files:
             shutil.copy(join(root, file), tmp)
         cdir = os.getcwd()
-
+        
+        for root, dir, extra_lib_flag in self.target_platform.values():
+            print root, dir 
+            logger.debug(' looking up directory binary bundle: '+ \
+                         join(root, dir, 'META-INF', 'MANIFEST.MF'))
+            manifest_des = open(join(root, dir, 'META-INF', 'MANIFEST.MF'), 'r')
+            manifest_file = manifest_des.read()
+            logger.debug(manifest_file)
+            parser = manifest.ManifestParser()
+            bundle = parser.parse(manifest_file)
+            if bundle == None:
+                continue
+            bundle.root = root
+            bundle.file = dir
+            logger.debug(bundle, bundle.sym_name)
+            bundle.binary_bundle_dir = True
+            assert not bundle.sym_name in self.unique_bundles
+            self.unique_bundles[bundle.sym_name] = bundle
+            self.bundles.append(bundle)            
+        
+        
         for root, file in self.jar_files:
             os.chdir(tmp)
             ret = subprocess.call(['jar', 'xf', join(tmp,file),
@@ -54,6 +74,7 @@ class BinaryBundleFinder:
             shutil.rmtree(join(tmp, 'META-INF'))
             logger.debug(manifest_file)
             parser = manifest.ManifestParser()
+#            print 'parsing ', root, file
             bundle = parser.parse(manifest_file)
             if bundle == None:
                 continue    
@@ -69,8 +90,8 @@ class BinaryBundleFinder:
             assert not bundle.sym_name in self.unique_bundles
             self.unique_bundles[bundle.sym_name] = bundle
             self.bundles.append(bundle)
-            if not(bundle.file in do_not_package_libs):
-                self.target_platform[join(bundle.root,bundle.file)] =\
+            #if not(bundle.file in do_not_package_libs):
+            self.target_platform[join(bundle.root,bundle.file)] =\
                     (bundle.root, bundle.file, False)
         shutil.rmtree(tmp)
             
@@ -79,13 +100,17 @@ class BinaryBundleFinder:
             i.display()
             print '-'*80
         
-    def find(self, jar_path, bundle_dirs):
+    def find(self, jar_path):
         for i in jar_path:
             logger.debug('jar_path: '+str(i))
             for root, dirs, files in os.walk(i):
                 for dir in dirs:
-                    if dir in bundle_dirs:
-                        self.target_platform[join(root,dir)] = (root, dir, True)
+                    if dir == 'META-INF':
+                        assert os.path.isdir(root)
+                        (parent_root, parent) = os.path.split(root)
+                        assert os.path.isdir(parent_root)
+                        self.target_platform[join(parent_root,parent)] = \
+                            (parent_root, parent, True)
                 for file in files:
                     if file.endswith(r'.jar'):
                         self.jar_files.append((root, file))
@@ -217,9 +242,9 @@ class Dependencies:
                    
         src.bundles = sorted(src.bundles, key=lambda bundle : bundle.build_level)
         
-        for bundle in src.bundles:
+        #for bundle in src.bundles:
             #print bundle.sym_name, bundle.build_level
-            pass
+        #    pass
         
         return True
         
