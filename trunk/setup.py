@@ -23,7 +23,7 @@ from distutils.core import setup
 setup(name='auto-builder',
       version='1.0',
       description='This is my rifle, this is my gun',
-      license='GPL',
+      license='GPL v3',
       author='James Percent',
       author_email='james@empty-set.net',
       url='http://code.google.com/p/auto-builder',
