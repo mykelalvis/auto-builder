@@ -236,11 +236,11 @@ class Dependencies:
         h4x0r = True
         while h4x0r:
             h4x0r = False
-            for bundle in src.bundles:
+            for bundle in self.src.bundles:
                 if self.__partially_order__(bundle):
                     h4x0r = True
                    
-        src.bundles = sorted(src.bundles, key=lambda bundle : bundle.build_level)
+        self.src.bundles = sorted(self.src.bundles, key=lambda bundle : bundle.build_level)
         
         #for bundle in src.bundles:
             #print bundle.sym_name, bundle.build_level
@@ -249,23 +249,22 @@ class Dependencies:
         return True
         
     def resolve(self):
-        exports = {}
-        bundles = {}
-        for bundle in src.bundles:
+
+        for bundle in self.src.bundles:
             print bundle.sym_name
-            assert not bundle.sym_name in bundles 
-            bundles[bundle.sym_name] = bundle
+            assert not bundle.sym_name in self.bundles 
+            self.bundles[bundle.sym_name] = bundle
                 
             for package in bundle.epackages:
-                self.__add_package__(exports, package, bundle)
+                self.__add_package__(self.exports, package, bundle)
         #assert False
         
         #print bundles
             
-        for bundle in jars.bundles:
+        for bundle in self.jars.bundles:
             #print '--->'+str(bundle.sym_name)+'<---', bundle
-            if not bundle.sym_name in bundles:
-                bundles[bundle.sym_name] = bundle
+            if not bundle.sym_name in self.bundles:
+                self.bundles[bundle.sym_name] = bundle
             else:
                 #print 'Bundle '+str(bundle.sym_name)+\
                 #' found both binary and src;'+\
@@ -275,41 +274,41 @@ class Dependencies:
                 
             #print bundle.display()
             for package in bundle.epackages:
-                self.__add_package__(exports, package, bundle)
+                self.__add_package__(self.exports, package, bundle)
         
         #assert False
         #print bundles
         required_jars = {}
         # package.name = [(pacakge, bundle), (package, bundle)]
-        for bundle in src.bundles:
+        for bundle in self.src.bundles:
             
             if bundle.fragment:
-                assert bundle.fragment_host.name in bundles
+                assert bundle.fragment_host.name in self.bundles
               
             for required_bundle_info in bundle.rbundles:
                 found = False
                 print 'required bundle', bundle.sym_name, \
                     required_bundle_info.name
                 
-                if required_bundle_info.name in bundles and \
+                if required_bundle_info.name in self.bundles and \
                     required_bundle_info.is_in_range(\
-                        bundles[required_bundle_info.name].version):
+                        self.bundles[required_bundle_info.name].version):
                     found = True
                     
                     if bundle.fragment and\
                         bundle.sym_name == 'com.ambient.labtrack.test':
                         
                         print 'adding dep '+str(required_bundle_info.name)+\
-                           '-'+str(bundles[required_bundle_info.name].version),\
+                           '-'+str(self.bundles[required_bundle_info.name].version),\
                            ' to ', bundle.sym_name
                         
                     print 'Adding the dep bundle = ', required_bundle_info.name,\
-                           bundles[required_bundle_info.name]
+                           self.bundles[required_bundle_info.name]
                     
-                    bundle.add_dep(bundles[required_bundle_info.name])
-                    if bundles[required_bundle_info.name].is_binary_bundle:
-                        required_jars[bundles[required_bundle_info.name].sym_name] =\
-                        bundles[required_bundle_info.name]
+                    bundle.add_dep(self.bundles[required_bundle_info.name])
+                    if self.bundles[required_bundle_info.name].is_binary_bundle:
+                        required_jars[self.bundles[required_bundle_info.name].sym_name] =\
+                        self.bundles[required_bundle_info.name]
                         
                 if not found:
                     print 'ERROR could not find matching required bundle ',\
@@ -318,8 +317,8 @@ class Dependencies:
             for package in bundle.ipackages:
                 found = False
                 version_found = []
-                if package.name in exports:
-                    for ex_package, ex_bundle in exports[package.name]:
+                if package.name in self.exports:
+                    for ex_package, ex_bundle in self.exports[package.name]:
                         #if package.name == 'javax.jms':
                             #import pdb
                             #pdb.set_trace()
@@ -351,7 +350,7 @@ class Dependencies:
                         
                 else:
                     import re
-                    print re.match(r'javax.xml.namespace', str(exports))
+                    print re.match(r'javax.xml.namespace', str(self.exports))
                     print 'ERROR: cannot resolve package: ', package.name\
                     +' for bundle '+bundle.sym_name+'; skipping it'
                     #return False
