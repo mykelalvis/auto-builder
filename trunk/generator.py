@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#    Authtor: James Percent (james@empty-set.net)
+#    Author: James Percent (james@empty-set.net)
 #    Copyright 2010, 2011 James Percent
 # 
 #    This program is free software: you can redistribute it and/or modify
@@ -26,11 +26,10 @@ def set_logger_level(logLevel):
     logger.setLevel(logLevel)
 
 class AntGenerator:
-    def __init__(self, project_name, jar_bundles, source_bundles, target_platform,
+    def __init__(self, project_name, source_bundles, target_platform,
                  master_build_file_root, build_writer):
             
         self.project_name = project_name
-        self.jars = jar_bundles
         self.src = source_bundles
         self.target_platform = target_platform
         self.master_root = master_build_file_root
