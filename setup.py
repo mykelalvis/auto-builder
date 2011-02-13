@@ -30,5 +30,5 @@ setup(name='auto-builder',
       data_files=[('', ['logger.config']) ],
       scripts=['auto-build'],
       py_modules=['auto_builder', 'manifest', 'dependencies', 'generator',
-                  'ply.lex', 'ply.yacc', 'ply.cpp', 'ply.ctokens', 'conf'],
+                  'ply.lex', 'ply.yacc', 'ply.cpp', 'ply.ctokens'],
       )
