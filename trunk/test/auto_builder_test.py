@@ -34,11 +34,13 @@ from auto_builder import *
 from dependencies import *
 from manifest import *
 from generator import *
+#import conf
 
 auto_builder.set_logger_level(logging.WARN)
 
 class ParametersTest(unittest.TestCase):
     def testLogLevels(self):
+        import conf
         conf.library_path = [os.getcwd()]
         conf.source_path = [os.getcwd()]        
         params = auto_builder.Parameters()
@@ -72,8 +74,47 @@ class ParametersTest(unittest.TestCase):
         params = auto_builder.Parameters()
         self.assertEquals(logging.WARN, auto_builder.logger.getEffectiveLevel())
     
-    
+    def testConfException(self):
+        sys.argv = [sys.argv[0], '-p', '.', '-s', '.']
+        params = auto_builder.Parameters()
+        self.assertEquals('.', params.options.library_path)
+        self.assertEquals('.', params.options.source_path)
+        self.assertEquals(['.'], params.options.jar_path)
+        self.assertEquals(['.'], params.options.src_path)
+
+        caught = False
+        try:
+            sys.argv = [sys.argv[0], '-p', '.']
+            params = auto_builder.Parameters()
+            self.assertEquals('.', params.options.library_path)
+            self.assertEquals('.', params.options.source_path)
+            self.assertEquals(['.'], params.options.jar_path)
+            self.assertEquals(['.'], params.options.src_path)
+        except Exception as e:
+            caught = True
+        self.assertEquals(True, caught)
+
+        caugth = False
+        try:
+            sys.argv = [sys.argv[0], '-s', '.']
+            params = auto_builder.Parameters()
+            self.assertEquals('.', params.options.library_path)
+            self.assertEquals('.', params.options.source_path)
+            self.assertEquals(['.'], params.options.jar_path)
+            self.assertEquals(['.'], params.options.src_path)
+        except Exception as e:
+            caught = True
+        self.assertEquals(True, caught)
+        
+        import conf
+        sys.argv = [sys.argv[0], '-s', '.']
+        self.assertEquals('', params.options.library_path)
+        self.assertEquals('.', params.options.source_path)
+        self.assertEquals(['testlib'], params.options.jar_path)
+        self.assertEquals(['.'], params.options.src_path)
+        
     def testOptions(self):
+        import conf
         conf.library_path = [os.getcwd()]
         conf.source_path = [os.getcwd()]
         conf.project_name = ''

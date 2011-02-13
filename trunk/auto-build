@@ -22,5 +22,6 @@ import auto_builder
 import sys
 
 if __name__ == '__main__':
-    auto_builder.run()
+    auto_build = auto_builder.AutoBuilder()
+    auto_build.run()
 

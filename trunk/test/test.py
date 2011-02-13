@@ -24,7 +24,7 @@ import dependencies_test
 import generator_test
 import manifest_test
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
     python -m unittest auto_builder_test
     python -m unittest generator_test
     python -m unittest manifest_test
