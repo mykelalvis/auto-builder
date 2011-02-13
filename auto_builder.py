@@ -39,6 +39,7 @@ from os.path import join, abspath
 from generator import AntGenerator, FileWriter
 from dependencies import BinaryBundleFinder
 from dependencies import SourceBundleFinder
+from dependencies import Dependencies
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -395,7 +396,7 @@ def run():
         #jars.display()
         #src.display()
             
-        deps = Dep(jars, src, jars.target_platform)
+        deps = Dependencies(jars, src, jars.target_platform)
         assert deps.resolve()
         assert deps.sort()
         cmd_set = True
@@ -408,11 +409,11 @@ def run():
             src = load_src(params.options.src_path)
                 
         if deps == None:
-            deps = Dep(jars, src, jars.target_platform)
+            deps = Dependencies(jars, src, jars.target_platform)
             assert deps.resolve()
             assert deps.sort()
             
         writer = FileWriter()
-        gen = AntGenerator(params.options.project_name, deps.jars, deps.src.bundles,
+        gen = AntGenerator(params.options.project_name, deps.src.bundles,
                            deps.target_platform, '.', writer)
         gen.generate_build_files()
