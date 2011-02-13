@@ -545,8 +545,8 @@ class ManifestParser:
             
     def p_package_names(self, p):
         '''package_names : package_name
-                         | package_names SEMI_COLON package_name
-                         | package_names SEMI_COLON parameter'''
+                         | package_names SEMI_COLON package_name'''
+#                         | package_names SEMI_COLON parameter'''
         self.ast.package_names(p)
             
     def p_package_name(self, p):
