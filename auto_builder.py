@@ -55,23 +55,23 @@ class Parameters:
         self.options = None
         self.parser = OptionParser(version="%prog 1.3.37")
 
-        display_jars_help = 'Display binary bundles found on the library_path.'
-        display_src_help = 'Display source bundles found on the source_path.'
-        check_dep_help = 'Validate dependencies without generating build artifacts.'
-        build_gen_help = 'Validate dependencies and generate build artifacts.'
-        loglevel_help = 'Set the logging level; valid values are debug, info, '\
+        display_jars_help = 'display binary bundles found on the library_path'
+        display_src_help = 'display source bundles found on the source_path'
+        check_dep_help = 'validate dependencies without generating build artifacts'
+        build_gen_help = 'validate dependencies and generate build artifacts'
+        loglevel_help = 'set the logging level; valid values are debug, info, '\
                         'warn, error and critical'
         
-        lib_path_help = 'A colon separated list of valid root directories to search '\
+        lib_path_help = 'colon separated list of valid root directories to search '\
                         'for binary bundles (in PDE speak: the search '\
                         'path for the target platform); overrides the '\
-                        'library_path defined in conf.py.'
+                        'library_path defined in conf.py'
         
-        src_path_help = 'A colon separated list of valid root directories to search '\
+        src_path_help = 'colon separated list of valid root directories to search '\
                         'for source bundles; overrides the '\
-                        'source_path defined in conf.py.'
+                        'source_path defined in conf.py'
         
-        project_name_help = 'Specifies the name to use in the generated '\
+        project_name_help = 'specifies the name to use in the generated '\
                                  'content; overrides the project_name defined '\
                                  'in conf.py'        
                 
