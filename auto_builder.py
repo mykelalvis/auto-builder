@@ -58,7 +58,7 @@ class Parameters:
         display_jars_help = 'display binary bundles found on the library_path'
         display_src_help = 'display source bundles found on the source_path'
         check_dep_help = 'validate dependencies without generating build artifacts'
-        build_gen_help = 'validate dependencies and generate build artifacts'
+        build_gen_help = 'validate dependencies and generate build artifacts; set by default if no other options are set.'
         loglevel_help = 'set the logging level; valid values are debug, info, '\
                         'warn, error and critical'
         
