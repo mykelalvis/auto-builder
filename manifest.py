@@ -48,6 +48,7 @@ class Bundle:
         self.ipackages = []
         self.epackages = []
         self.rbundles = []
+        self.junit_tests = []
         self.version = Version()
         self.root = ''
         self.is_binary_bundle = False

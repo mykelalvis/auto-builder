@@ -3113,6 +3113,17 @@ class TestSourceBundleFinder(unittest.TestCase):
                 print 'did not find ' + i
                 self.assertFalse(True)                            
 
+class TestJUnitTestFinder(unittest.TestCase):
+    def testFind(self):
+        sfinder = SourceBundleFinder()
+        src_path = ['org.syndeticlogic.minerva.test']
+        sfinder.find(src_path)
+        sfinder.load()
+        
+        junit_tests = ('org.syndeticlogic.minerva.test/src/org/syndeticlogic/minerva/test/api', 'ReadZoneTest.java')
+        self.assertEquals(1, len(sfinder.bundles))
+        self.assertEquals(1, len(sfinder.bundles[0].junit_tests))
+        self.assertEquals(junit_tests, sfinder.bundles[0].junit_tests[0])
 
 if __name__ == '__main__':
     unittest.main()

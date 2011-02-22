@@ -35,6 +35,7 @@ class AntGenerator:
         self.master_root = master_build_file_root
         self.master_build_file = ''
         self.master_complie = ''
+        self.master_test = ''
         self.master_package = ''
         self.master_lint = ''
         self.master_clean = ''
@@ -108,6 +109,53 @@ class AntGenerator:
         f += '\t</target>\n'
         build_xml.write(f)
         
+    def __write_test_target__(self, build_xml, bundle):
+#
+#
+#<property name="src" value="./src" />
+#<property name="lib" value="./lib" />
+#<property name="classes" value="./classes" />
+#<property name="test.class.name" value="com.xyz.MyTestSuite" />
+#	  
+#
+##
+#
+#Set up the CLASSPATH to be used by JUnit:
+#
+#
+#<path id="test.classpath">
+#  <pathelement location="${classes}" />
+#  <pathelement location="/path/to/junit.jar" />
+#  <fileset dir="${lib}">
+#    <include name="**/*.jar"/>
+#  </fileset>
+#</path>
+#	  
+#
+##
+#
+#Define the Ant task for running JUnit:
+#
+#
+#<target name="test">
+#  <junit fork="yes" haltonfailure="yes">
+#    <test name="${test.class.name}" />
+#    <formatter type="plain" usefile="false" />
+#    <classpath refid="test.classpath" />
+#  </junit>
+#</target>
+#	  
+#        if len(bundle.junit_tests) > 0:
+        f = '\t<target name="test" depends="compile">\n'
+        f += '\t\t<junit fork="yes" haltonfailure="yes">\n'
+        for i in bundle.junit_tests:
+            f += '\t\t\t<test name="'+i+'" />\n'
+            f += '\t\t\t<formatter type="plain" usefile="false" />\n'
+            f += '\t\t\t<classpath refid="classpath" />\n'
+            f += '\t\t</junit>'
+        f += '\t</target>\n'
+        build_xml.write(f)        
+        
     def __write_lint_target__(self, build_xml):
         f = '\t<target name="lint" depends="init">\n'
         f += '\t\t<javac srcdir="${src}" destdir="${build}" classpathRef="classpath">\n'
@@ -155,12 +203,15 @@ class AntGenerator:
     
     def __append_to_master_build_file__(self, bundle):
         self.master_compile += '\t\t<ant dir="'+bundle.root+'" target="compile" />\n'
+        self.master_test += '\t\t<ant dir="'+bundle.root+'" target="test" />\n'
         self.master_clean += '\t\t<ant dir="'+bundle.root+'" target="clean" />\n'
         self.master_lint += '\t\t<ant dir="'+bundle.root+'" target="lint" />\n'
         self.master_package += '\t\t<ant dir="'+bundle.root+'" target="package" />\n'
+        
             
     def __write_master_build_file__(self, build_xml):
         self.master_compile += '\t</target>\n'
+        self.master_test += '\t</target>\n'        
         self.master_clean += '\t</target>\n'
         self.master_lint += '\t</target>\n'
 
@@ -179,6 +230,7 @@ class AntGenerator:
         
         self.master_build_file += self.master_clean
         self.master_build_file += self.master_compile
+        self.master_build_file += self.master_test
         self.master_build_file += self.master_lint
         self.master_build_file += self.master_package
         
@@ -204,6 +256,7 @@ class AntGenerator:
             self.__write_init_target__(self.writer)
             self.__write_clean_target__(self.writer)
             self.__write_compile_target__(self.writer)
+            self.__write_test_target__(self.writer, bundle)
             self.__write_jar_target__(self.writer, bundle)
             
             self.writer.write('</project>\n')
