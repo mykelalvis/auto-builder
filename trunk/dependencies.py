@@ -116,7 +116,13 @@ class BinaryBundleFinder:
                         self.jar_files.append((root, file))
                         
                         
-       
+
+class JUnitFinder:
+    def __init__(self):
+        pass
+
+import re
+
 class SourceBundleFinder:
     def __init__(self):
         self.src_manifests = []
@@ -129,7 +135,48 @@ class SourceBundleFinder:
                 if file.endswith(r'.jar'):
                     libs[join(root, file)] = join(root, file)
         return libs
-        
+    
+    def find_junit_tests(self, bundle):
+        depth = 1
+        for root, dirs, files in os.walk(bundle.root):
+            for file in files:
+                imports = False
+                tests = False
+                
+                if file.endswith(r'.java'):
+                    f = open(join(root, file), 'r')
+                    jfile = f.read()
+                    jfile = re.sub(r'\r','',  jfile)
+                    jfile_lines = re.split(r'\n', jfile)
+                    
+                    for line in jfile_lines:
+                        if re.search('import', line):
+                            if re.search('org.junit', line):
+                                imports = True
+                            elif re.search('junit.framework', line):
+                                imports = True
+                        elif re.search('@Test', line):
+                            tests = True
+                        elif re.search('extends', line):
+                            # finding junit3 test cases is doable but requires
+                            # a bit more screwing around because it can span
+                            # mulitple lines.  if anyone ever asks for it, then
+                            # i'll do it.  Until then fuck it because finding
+                            # import junit.framework will work most of the time.
+                            pass
+                if imports:
+                    bundle.junit_tests.append((root, file))
+                    if not tests:
+                        logger.warn(join(root, file)+\
+                                'has junit imports but no test methods')
+                elif tests:
+                    bundle.junit_tests.append((root, file))                    
+                    logger.warn(join(root, file)+\
+                                'has tests but no junit imports; this test '+\
+                                'may not work correctly')
+        #for i in bundle.junit_tests:
+        #    print i
+            
     def load(self):
         for root, dir, libs in self.src_manifests:
             logger.debug(join(root, dir, 'MANIFEST.MF'))
@@ -144,6 +191,8 @@ class SourceBundleFinder:
                 #print libs
                 bundle.extra_libs = libs
                 #assert False
+                
+            self.find_junit_tests(bundle)
             self.bundles.append(bundle)
             
     def display(self):
