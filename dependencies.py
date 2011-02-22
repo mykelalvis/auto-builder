@@ -18,11 +18,13 @@
 #
 
 import os
-import manifest
-import subprocess
+import re
 import logging
+import manifest
 import tempfile
 import shutil
+import subprocess
+
 from os.path import join, abspath
 
 logger = logging.getLogger(__name__)
@@ -61,8 +63,7 @@ class BinaryBundleFinder:
             assert not bundle.sym_name in self.unique_bundles
             self.unique_bundles[bundle.sym_name] = bundle
             self.bundles.append(bundle)            
-        
-        
+                
         for root, file in self.jar_files:
             os.chdir(tmp)
             ret = subprocess.call(['jar', 'xf', join(tmp,file),
@@ -85,7 +86,7 @@ class BinaryBundleFinder:
                 logger.info('Bundle '+join(root, file)+' has no symbolic name;'\
                             ' skipping it')
                 continue
-            
+                    
             assert bundle.sym_name != ''
             assert not bundle.sym_name in self.unique_bundles
             self.unique_bundles[bundle.sym_name] = bundle
@@ -115,13 +116,6 @@ class BinaryBundleFinder:
                     if file.endswith(r'.jar'):
                         self.jar_files.append((root, file))
                         
-                        
-
-class JUnitFinder:
-    def __init__(self):
-        pass
-
-import re
 
 class SourceBundleFinder:
     def __init__(self):
@@ -142,13 +136,19 @@ class SourceBundleFinder:
             for file in files:
                 imports = False
                 tests = False
-                
+                package = ''
+                    
+                # XXX - this will not work generally.  It works for now because
+                # my code conforms have things like import org.unit on 1 line,
+                # but to really do this requires a more general parser.
+                # if anyone ever asks for it, then
+                # i'll do it.  Until then fuck it
                 if file.endswith(r'.java'):
                     f = open(join(root, file), 'r')
                     jfile = f.read()
                     jfile = re.sub(r'\r','',  jfile)
                     jfile_lines = re.split(r'\n', jfile)
-                    
+                      
                     for line in jfile_lines:
                         if re.search('import', line):
                             if re.search('org.junit', line):
@@ -158,25 +158,26 @@ class SourceBundleFinder:
                         elif re.search('@Test', line):
                             tests = True
                         elif re.search('extends', line):
-                            # finding junit3 test cases is doable but requires
-                            # a bit more screwing around because it can span
-                            # mulitple lines.  if anyone ever asks for it, then
-                            # i'll do it.  Until then fuck it because finding
-                            # import junit.framework will work most of the time.
+                            
                             pass
-                if imports:
-                    bundle.junit_tests.append((root, file))
+
+                        elif re.search('package', line):
+                            package = line.split(' ')[1]
+                            package = package.split(';')[0]
+                            package = package.strip()
+                            
+                if imports or tests:
+                    file_name = re.sub(r'\.java$', '', file)
+                    print '#####################################################', file_name
+                    bundle.junit_tests.append((root, package, file_name))
                     if not tests:
                         logger.warn(join(root, file)+\
                                 'has junit imports but no test methods')
-                elif tests:
-                    bundle.junit_tests.append((root, file))                    
-                    logger.warn(join(root, file)+\
+                    if not imports:
+                        logger.warn(join(root, file)+\
                                 'has tests but no junit imports; this test '+\
                                 'may not work correctly')
-        #for i in bundle.junit_tests:
-        #    print i
-            
+                                
     def load(self):
         for root, dir, libs in self.src_manifests:
             logger.debug(join(root, dir, 'MANIFEST.MF'))
@@ -331,8 +332,8 @@ class Dependencies:
         # package.name = [(pacakge, bundle), (package, bundle)]
         for bundle in self.src.bundles:
             
-            if bundle.fragment:
-                assert bundle.fragment_host.name in self.bundles
+            #if bundle.fragment:
+            #    assert bundle.fragment_host.name in self.bundles
               
             for required_bundle_info in bundle.rbundles:
                 found = False

@@ -62,6 +62,10 @@ class TestFileWriter:
         
 class AntGeneratorTest(unittest.TestCase):
     
+    # '\t<target name="test" depends="compile">\n'
+    # '\t\t<junit fork="yes" haltonfailure="yes">\n'
+    # '\t</target>\n'
+    
     minerva = '<?xml version="1.0"?>\n'+\
     '<project name="org.syndeticlogic.minerva" default="compile" basedir="test-home">\n'+\
         '\t<property name="lib" value="test-home/lib" />\n'+\
@@ -219,6 +223,8 @@ class AntGeneratorTest(unittest.TestCase):
         gen = AntGenerator("test", src, target_platform, './', writer)
         gen.generate_build_files()
         top = True
+        print writer.files['../minerva']
+        
         self.assertTrue('../minerva' in writer.files)
         self.assertTrue('../minerva.tools' in writer.files)
         self.assertTrue('./' in writer.files)

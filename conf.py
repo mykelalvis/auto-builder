@@ -35,17 +35,10 @@ library_path = [
 
 source_path = [
     '../org.syndeticlogic.minerva',
-    '../org.syndeticlogic.minerva.adapters',
     '../org.syndeticlogic.minerva.init',
-    '../org.syndeticlogic.minerva.tools'
+    '../org.syndeticlogic.minerva.tools',
+    '../org.syndeticlogic.minerva.test'
 ]
-
-#    '../org.syndeticlogic.minerva',
-#    '../org.syndeticlogic.minerva.adapters',
-#    '../org.syndeticlogic.minerva.init',
-#    '../org.syndeticlogic.minerva.tools'
-#]
-
 
 #do_not_package_libs = [
 #'com.springsource.org.junit_4.8.1.jar',

@@ -63,10 +63,14 @@ class AntGenerator:
                 clazz = ''              
                 clazz += join(dep.root, dep.file)
                 if not dep.is_binary_bundle:
-                    clazz += '/bin'
+                    clazz += join(clazz, 'bin')
                     
                 if not (clazz in bundle.classpath):
                     bundle.classpath[clazz] = clazz
+                    
+        if len(bundle.junit_tests) > 0:
+            clazz = join(bundle.root, 'bin')
+            bundle.classpath[clazz] = clazz
                     
     def __write_preamble__(self, build_xml, home, bundle):
         f = '<?xml version="1.0"?>\n'
@@ -110,49 +114,18 @@ class AntGenerator:
         build_xml.write(f)
         
     def __write_test_target__(self, build_xml, bundle):
-#
-#
-#<property name="src" value="./src" />
-#<property name="lib" value="./lib" />
-#<property name="classes" value="./classes" />
-#<property name="test.class.name" value="com.xyz.MyTestSuite" />
-#	  
-#
-##
-#
-#Set up the CLASSPATH to be used by JUnit:
-#
-#
-#<path id="test.classpath">
-#  <pathelement location="${classes}" />
-#  <pathelement location="/path/to/junit.jar" />
-#  <fileset dir="${lib}">
-#    <include name="**/*.jar"/>
-#  </fileset>
-#</path>
-#	  
-#
-##
-#
-#Define the Ant task for running JUnit:
-#
-#
-#<target name="test">
-#  <junit fork="yes" haltonfailure="yes">
-#    <test name="${test.class.name}" />
-#    <formatter type="plain" usefile="false" />
-#    <classpath refid="test.classpath" />
-#  </junit>
-#</target>
-#	  
-#        if len(bundle.junit_tests) > 0:
         f = '\t<target name="test" depends="compile">\n'
         f += '\t\t<junit fork="yes" haltonfailure="yes">\n'
+        tests = False
         for i in bundle.junit_tests:
-            f += '\t\t\t<test name="'+i+'" />\n'
+            tests = True
+            f += '\t\t\t<test name="'+i[1]+'.'+i[2]+'" />\n'
+
+        if tests:
             f += '\t\t\t<formatter type="plain" usefile="false" />\n'
             f += '\t\t\t<classpath refid="classpath" />\n'
-            f += '\t\t</junit>'
+        
+        f += '\t\t</junit>\n'
         f += '\t</target>\n'
         build_xml.write(f)        
         
