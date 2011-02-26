@@ -150,17 +150,16 @@ class SourceBundleFinder:
                     jfile_lines = re.split(r'\n', jfile)
                       
                     for line in jfile_lines:
-                        if re.search('import', line):
+                        if re.search('import.*;', line):
                             if re.search('org.junit', line):
                                 imports = True
                             elif re.search('junit.framework', line):
                                 imports = True
                         elif re.search('@Test', line):
                             tests = True
-                        elif re.search('extends', line):
-                            
-                            pass
-
+                        elif re.search(\
+ 'class[ \t\n\r]+[a-zA-Z][a-zA-Z0-9]*[ \t\n\r]+extends[ \t\n\r]+TestCase', line):
+                            tests = True                            
                         elif re.search('package', line):
                             package = line.split(' ')[1]
                             package = package.split(';')[0]
@@ -221,8 +220,8 @@ class SourceBundleFinder:
                         
                 manifest += (libs,)
                 self.src_manifests.append(manifest)
-
-
+                    
+                
 class Dependencies:
     def __init__(self, jars, src, target):
         self.jars = jars
