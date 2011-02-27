@@ -75,21 +75,17 @@ class ParametersTest(unittest.TestCase):
         self.assertEquals(logging.WARN, auto_builder.logger.getEffectiveLevel())
     
     def testConfException(self):
-        sys.argv = [sys.argv[0], '-p', '.', '-s', '.']
+        sys.argv = [sys.argv[0], '-p', '.:../', '-s', '.']
         params = auto_builder.Parameters()
-        self.assertEquals('.', params.options.library_path)
+        self.assertEquals('.:../', params.options.library_path)
         self.assertEquals('.', params.options.source_path)
-        self.assertEquals(['.'], params.options.jar_path)
+        self.assertEquals(['.', '../'], params.options.jar_path)
         self.assertEquals(['.'], params.options.src_path)
 
         caught = False
         try:
             sys.argv = [sys.argv[0], '-p', '.']
             params = auto_builder.Parameters()
-            self.assertEquals('.', params.options.library_path)
-            self.assertEquals('.', params.options.source_path)
-            self.assertEquals(['.'], params.options.jar_path)
-            self.assertEquals(['.'], params.options.src_path)
         except Exception as e:
             caught = True
         self.assertEquals(True, caught)
@@ -98,20 +94,19 @@ class ParametersTest(unittest.TestCase):
         try:
             sys.argv = [sys.argv[0], '-s', '.']
             params = auto_builder.Parameters()
-            self.assertEquals('.', params.options.library_path)
-            self.assertEquals('.', params.options.source_path)
-            self.assertEquals(['.'], params.options.jar_path)
-            self.assertEquals(['.'], params.options.src_path)
         except Exception as e:
             caught = True
         self.assertEquals(True, caught)
         
         import conf
-        sys.argv = [sys.argv[0], '-s', '.']
+        conf.library_path = ['testlib']
+        conf.source_path = ['fuckedpath']
+        sys.argv = [sys.argv[0], '-s', str(os.getcwd())]
+        params = auto_builder.Parameters()
         self.assertEquals('', params.options.library_path)
-        self.assertEquals('.', params.options.source_path)
+        self.assertEquals(str(os.getcwd()), params.options.source_path)
         self.assertEquals(['testlib'], params.options.jar_path)
-        self.assertEquals(['.'], params.options.src_path)
+        self.assertEquals([str(os.getcwd())], params.options.src_path)
         
     def testOptions(self):
         import conf

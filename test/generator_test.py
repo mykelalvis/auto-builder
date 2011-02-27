@@ -75,6 +75,7 @@ class AntGeneratorTest(unittest.TestCase):
         '\t<property name="metainf" value="../minerva/META-INF" />\n'+\
         '\t<property name="bundle" value="test-home/lib/org.syndeticlogic.minerva_1.3.jar" />\n'+\
         '\t<path id="classpath">\n'+\
+            '\t\t<pathelement location="../minerva/bin"/>\n'+\
             '\t\t<pathelement location="../libs/org.eclipse.osgi.jar"/>\n'+\
         '\t</path>\n'+\
         '\t<target name="init" depends="clean">\n'+\
@@ -86,6 +87,14 @@ class AntGeneratorTest(unittest.TestCase):
         '\t</target>\n'+\
         '\t<target name="compile" depends="init">\n'+\
             '\t\t<javac srcdir="${src}" destdir="${build}" classpathRef="classpath"/>\n'+\
+        '\t</target>\n'+\
+        '\t<target name="test" depends="compile">\n'+\
+            '\t\t<junit fork="yes" haltonfailure="yes">\n'+\
+                '\t\t\t<test name="minerva.test.minervaJunitTest.java" />\n'+\
+                '\t\t\t<test name="minerva.test.api.minervaJunitTest1.java" />\n'+\
+                '\t\t\t<formatter type="plain" usefile="false" />\n'+\
+                '\t\t\t<classpath refid="classpath" />\n'+\
+            '\t\t</junit>\n'+\
         '\t</target>\n'+\
         '\t<target name="package" depends="compile">\n'+\
             '\t\t<jar destfile="${bundle}" basedir="${build}" manifest="${manifest}">\n'+\
@@ -104,6 +113,7 @@ class AntGeneratorTest(unittest.TestCase):
             '\t<property name="bundle" value="test-home/lib/org.syndeticlogic.minerva.tools_1.3.1.jar" />\n'+\
             '\t<path id="classpath">\n'+\
                 '\t\t<pathelement location="../minerva/minerva.jar/bin"/>\n'+\
+                '\t\t<pathelement location="../minerva/bin"/>\n'+\
                 '\t\t<pathelement location="../libs/org.eclipse.osgi.jar"/>\n'+\
             '\t</path>\n'+\
             '\t<target name="init" depends="clean">\n'+\
@@ -115,6 +125,8 @@ class AntGeneratorTest(unittest.TestCase):
             '\t</target>\n'+\
             '\t<target name="compile" depends="init">\n'+\
                     '\t\t<javac srcdir="${src}" destdir="${build}" classpathRef="classpath"/>\n'+\
+            '\t</target>\n'+\
+            '\t<target name="test" depends="compile">\n'+\
             '\t</target>\n'+\
             '\t<target name="package" depends="compile">\n'+\
                     '\t\t<jar destfile="${bundle}" basedir="${build}" manifest="${manifest}">\n'+\
@@ -137,6 +149,10 @@ class AntGeneratorTest(unittest.TestCase):
             '\t<target name="compile">\n'+\
                     '\t\t<ant dir="../minerva" target="compile" />\n'+\
                     '\t\t<ant dir="../minerva.tools" target="compile" />\n'+\
+            '\t</target>\n'+\
+            '\t<target name="test">\n'+\
+                '\t\t<ant dir="../minerva" target="test" />\n'+\
+                '\t\t<ant dir="../minerva.tools" target="test" />\n'+\
             '\t</target>\n'+\
             '\t<target name="lint" description="run lint" >\n'+\
                     '\t\t<ant dir="../minerva" target="lint" />\n'+\
@@ -198,6 +214,8 @@ class AntGeneratorTest(unittest.TestCase):
         b1.add_epackage(p1)
         b1.add_required_bundle_lookup_info(p1)
         b1.add_dep(b)
+        b1.junit_tests.append((b1.root, 'minerva.test', 'minervaJunitTest.java'))
+        b1.junit_tests.append((b1.root, 'minerva.test.api', 'minervaJunitTest1.java'))
         
         b2 = Bundle()
         b2.sym_name = p2.name
@@ -216,20 +234,38 @@ class AntGeneratorTest(unittest.TestCase):
         src.append(b2)
         
         return (jars, src, target_platform, writer)
-        
+    
+    # XXX - this isn't the test i am most proud of, and it could be refactored.
+    # however, it has helped me to find 3 regressions as I made other changes
+    # to the code base.  it works and has been helpful; it certainly isn't
+    # pretty.
     def test_generator(self):
         #print 'test generator'
         jars, src, target_platform, writer = self.generate_stubs()
         gen = AntGenerator("test", src, target_platform, './', writer)
         gen.generate_build_files()
         top = True
-        print writer.files['../minerva']
+        
+        #print self.master
+        #print 80*'#'
+        #print writer.files['../minerva']
         
         self.assertTrue('../minerva' in writer.files)
         self.assertTrue('../minerva.tools' in writer.files)
         self.assertTrue('./' in writer.files)
+
+        #str = ''
+        #for i in range(0, len(self.minerva_tools)):
+        #    if self.minerva_tools[i] == writer.files['../minerva.tools'][i]:
+        #        str += self.minerva_tools[i]
+        #    else:
+        #        break
+        #print str
+        #return
+
         
         self.assertEquals(self.minerva, writer.files['../minerva'])
+        
         self.assertEquals(self.minerva_tools, writer.files['../minerva.tools'])
         self.assertEquals(self.master, writer.files['./'])
 
