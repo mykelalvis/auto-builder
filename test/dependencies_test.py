@@ -3121,7 +3121,7 @@ class TestJUnitTestFinder(unittest.TestCase):
         sfinder.load()
         
         junit_tests = ('org.syndeticlogic.minerva.test/src/org/syndeticlogic/minerva/test/api',
-                       'org.syndeticlogic.minerva.test.api', 'ReadZoneTest.java')
+                       'org.syndeticlogic.minerva.test.api', 'ReadZoneTest')
         
         self.assertEquals(1, len(sfinder.bundles))
         self.assertEquals(1, len(sfinder.bundles[0].junit_tests))
