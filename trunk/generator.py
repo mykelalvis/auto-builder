@@ -63,7 +63,7 @@ class AntGenerator:
                 clazz = ''              
                 clazz += join(dep.root, dep.file)
                 if not dep.is_binary_bundle:
-                    clazz += join(clazz, 'bin')
+                    clazz = join(clazz, 'bin')
                     
                 if not (clazz in bundle.classpath):
                     bundle.classpath[clazz] = clazz
@@ -114,18 +114,20 @@ class AntGenerator:
         build_xml.write(f)
         
     def __write_test_target__(self, build_xml, bundle):
+              
         f = '\t<target name="test" depends="compile">\n'
-        f += '\t\t<junit fork="yes" haltonfailure="yes">\n'
-        tests = False
-        for i in bundle.junit_tests:
-            tests = True
-            f += '\t\t\t<test name="'+i[1]+'.'+i[2]+'" />\n'
-
-        if tests:
-            f += '\t\t\t<formatter type="plain" usefile="false" />\n'
-            f += '\t\t\t<classpath refid="classpath" />\n'
-        
-        f += '\t\t</junit>\n'
+        if len(bundle.junit_tests) > 0:
+            f += '\t\t<junit fork="yes" haltonfailure="yes">\n'
+            tests = False
+            for i in bundle.junit_tests:
+                tests = True
+                f += '\t\t\t<test name="'+i[1]+'.'+i[2]+'" />\n'
+                    
+            if tests:
+                f += '\t\t\t<formatter type="plain" usefile="false" />\n'
+                f += '\t\t\t<classpath refid="classpath" />\n'
+                
+            f += '\t\t</junit>\n'
         f += '\t</target>\n'
         build_xml.write(f)        
         
@@ -170,6 +172,7 @@ class AntGenerator:
         self.master_build_file += '\t\t<mkdir dir="${lib}" />\n'
         self.master_build_file += '\t</target>\n'
         self.master_compile = '\t<target name="compile">\n'
+        self.master_test = '\t<target name="test">\n'
         self.master_clean = '\t<target name="clean" description="clean up">\n'
         self.master_lint = '\t<target name="lint" description="run lint" >\n'
         self.master_package = '\t<target name="package" description="packages bundles" depends="init">\n'        

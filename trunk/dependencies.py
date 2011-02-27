@@ -117,6 +117,10 @@ class BinaryBundleFinder:
                         self.jar_files.append((root, file))
                         
 
+#className = identifier+r'[.]'
+#identifier = r'[a-zA-Z][a-zA-Z0-9]*'
+#importStatement = r'import[ \t\n\r]'+identifier+r'
+
 class SourceBundleFinder:
     def __init__(self):
         self.src_manifests = []
@@ -138,11 +142,9 @@ class SourceBundleFinder:
                 tests = False
                 package = ''
                     
-                # XXX - this will not work generally.  It works for now because
-                # my code conforms have things like import org.unit on 1 line,
-                # but to really do this requires a more general parser.
-                # if anyone ever asks for it, then
-                # i'll do it.  Until then fuck it
+                # XXX - this is not the most desired solution, but it is what
+                # I had time to complete.  If someone ever has a problem finding
+                # tests, a more robust parser might be necessary.
                 if file.endswith(r'.java'):
                     f = open(join(root, file), 'r')
                     jfile = f.read()
@@ -167,7 +169,7 @@ class SourceBundleFinder:
                             
                 if imports or tests:
                     file_name = re.sub(r'\.java$', '', file)
-                    print '#####################################################', file_name
+                    #print '#####################################################', file_name
                     bundle.junit_tests.append((root, package, file_name))
                     if not tests:
                         logger.warn(join(root, file)+\
@@ -300,7 +302,7 @@ class Dependencies:
     def resolve(self):
 
         for bundle in self.src.bundles:
-            print bundle.sym_name
+            #print bundle.sym_name
             assert not bundle.sym_name in self.bundles 
             self.bundles[bundle.sym_name] = bundle
                 
@@ -336,8 +338,8 @@ class Dependencies:
               
             for required_bundle_info in bundle.rbundles:
                 found = False
-                print 'required bundle', bundle.sym_name, \
-                    required_bundle_info.name
+                #print 'required bundle', bundle.sym_name, \
+                #    required_bundle_info.name
                 
                 if required_bundle_info.name in self.bundles and \
                     required_bundle_info.is_in_range(\
