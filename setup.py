@@ -29,6 +29,6 @@ setup(name='auto-builder',
       url='http://code.google.com/p/auto-builder',
       data_files=[('', ['logger.config']) ],
       scripts=['auto-build'],
-      py_modules=['auto_builder', 'manifest', 'dependencies', 'generator',
+      py_modules=['auto_builder', 'manifest', 'dependencies', 'generator', 'parsetab',
                   'ply.lex', 'ply.yacc', 'ply.cpp', 'ply.ctokens'],
       )
