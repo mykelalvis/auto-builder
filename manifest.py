@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 #
-#    This module contains the unit tests for the auto builder tools.
-#
 #    Authtor: James Percent (james@empty-set.net)
 #    Copyright 2010, 2011 James Percent
 # 
@@ -443,7 +441,8 @@ class ManifestParser:
         #print self.debugfile, self.tabmodule
 
         lex.lex(module=self)#, debug=self.debug)
-        yacc.yacc(module=self)#,
+        
+        yacc.yacc(module=self, method="SLR")#,
                   #debug=self.debug,
                   #debugfile=self.debugfile,
                   #tabmodule=self.tabmodule)    
