@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 #
-#    This module contains the unit tests for the auto builder tools.
-#
 #    Authtor: James Percent (james@empty-set.net)
 #    Copyright 2010, 2011 James Percent
 # 
@@ -18,8 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#
-# Default auto-builder configuration
 
 project_name = 'Minerva'
 
