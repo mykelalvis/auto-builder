@@ -31,6 +31,7 @@ import manifest
 import subprocess
 import dependencies
 import generator
+import persist
 
 from optparse import OptionParser
 from os.path import join, abspath
@@ -100,6 +101,7 @@ class Parameters:
         self.parser.add_option("-n", "--project-name", default='', type=str,
                                dest="project_name", metavar="NAME", 
                                help=project_name_help)
+        self.parser.add_option('-z', action='store_true', default=False, dest='z')
         #self.parser.add_option("-g", "--gen-build",
         #              dest="gen_build", metavar="BUILD-TYPE", type=str,
         #              default='ant', help=gen_build_help)
@@ -191,8 +193,8 @@ class AutoBuilder:
         self.sfinder = SourceBundleFinder()
         self.params = Parameters()
         
-        self.jfinder.find(self.params.options.jar_path)
-        self.jfinder.load()            
+        #self.jfinder.find(self.params.options.jar_path)
+        #self.jfinder.load()            
         self.sfinder.find(self.params.options.src_path)
         self.sfinder.load()
 
@@ -229,7 +231,16 @@ class AutoBuilder:
             assert self.dependencies.sort()
             cmd_set = True
             dependencies_resolved = True
+        
+        if self.params.options.z:
+            cmd_set = True
+            r = persist.RelationManager()
+            r.create_relations()
+            for bundle in self.sfinder.bundles:
+                r.add_bundle(bundle)
+                break
             
+        
         if self.params.options.build_gen or not cmd_set:
             if dependencies_resolved == False:
                 assert self.dependencies.resolve()
