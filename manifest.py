@@ -16,19 +16,18 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 import os
 import re
 import sys
 import logging
-#import parsetab
+
 import ply.lex as lex
 import ply.yacc as yacc
-
 
 logger = logging.getLogger(__name__)
 def set_logger_level(logLevel):
     logger.setLevel(logLevel)
-
 
 class Bundle:
     def __init__(self):

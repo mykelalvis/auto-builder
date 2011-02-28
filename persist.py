@@ -2,10 +2,9 @@
 
 import sqlite3
 
-bundle_id = 0
-
 class RelationManager:   
     def __init__(self):
+        self.bundle_id = 0
         self.bundle_rvar = []
         self.import_rvar = []
         self.export_rvar = []
@@ -14,28 +13,48 @@ class RelationManager:
         self.classpath_jar_rvar = []
                                  
     def add_bundle(self, bundle):
-        bt = BundleTuple(bundle)
-        self.bundle_rvars.append(bt)
-                
+        bt = BundleTuple(self.bundle_id, bundle)
+        self.bundle_id += 1
+        self.bundle_rvar.append(bt)
+        
         c = sqlite3.connect('auto-build.db')
+        insert_bt = '''insert into bundles values('+bt.values()+')'''
+        print insert_bt
+        c.execute(insert_bt)
+        
         for epackage in bundle.epackages:
             ex = PackageExportTuple(bt.id, epackage)
+            insert_ex = 'insert into bundles values('+ex.values()+')'
+            print insert_ex
+            c.execute(insert_ex)
             self.export_rvar.append(ex)
             
         for ipacage in bundle.ipackages:
             im = PackageImportTuple(bt.id, ipackage)
+            insert_im = 'insert into bundles values('+im.values()+')'
+            print insert_im            
+            c.execute(insert_im)                                 
             self.import_rvar.append(im)
             
         for extra_lib in bundle.extra_libs:
             exlib = ExtraLibTuple(bt.id, extra_lib)
+            insert_exlib = 'insert into bundles values('+exlib.values()+')'
+            print insert_exlib
+            c.execute(insert_exlib)                                 
             self.extra_libs_rvar.append(exlib)
             
         for junit_test in bundle.junit_tests:
             junit = JUnitTuple(bt.id, junit_test[0], junit_test[1], junit_test[3])
+            insert_junit = 'insert into bundles values('+junit.values()+')'
+            print insert_junit
+            c.execute(insert_junit)                                 
             self.junit_rvar.append(junit)
             
         for classpath_jar in bundle.claspath_jars:
             classpathjar = ClasspathJarTuple(bt.id, classpath_jar)
+            insert_classpathjar = 'insert into bundles values('+classpathjar.values()+')'
+            print insert_classpathjar            
+            c.execute(insert_classpathjar)                                 
             self.classpath_jar_rvar.append(classpathjar)
 
     def create_relations(self):
@@ -81,12 +100,10 @@ class RelationManager:
         c.execute(junit_relation)
         c.execute(classpath_jar_relation)
         
-    
-
-class BundleTuple:    
+        
+class BundleTuple:
     def __init__(self, bundle_id, bundle):
         self.id = bundle_id
-        bundle_id += 1
         self.sym_name = bundle.sym_name
         self.vmajor = bundle.version.major
         self.vminor = bundle.version.minor
@@ -98,11 +115,26 @@ class BundleTuple:
         self.fragment = bundle.fragment
         self.fragment_host = bundle.fragment_host
         self.binary_bundle_dir = bundle.binary_bundle_dir
-
+        
+    def values(self):
+        is_binary_bundle = 0
+        fragment = 0
+        if self.is_binary_bundle:
+            is_binary_bundle = 1
+        if fragment:
+            fragment = 1
+            
+        return str(self.id)+','+str(self.sym_name)+','+str(self.vmajor)+','+\
+                str(self.vminor)+','+str(self.vmicro)+','+str(self.vqual)+','+\
+                str(self.root)+','+str(is_binary_bundle)+','+str(self.file)+','+\
+                str(fragment)+','+str(self.fragment_host)+','+str(self.binary_bundle_dir)
+                
 class RequiredBundleTuple:
     def __init__(self, bundle_id, required_bundle_name):
         self.bundle_id = bundle_id
         self.required_bundle_name = required_bundle_name
+    def values(self):
+        return str(self.bundle_id)+','+str(self.required_bundle_name)
         
 class PackageExportTuple:
     def __init__(self, bundle_id, package):
@@ -112,12 +144,16 @@ class PackageExportTuple:
         self.pvminor = package.bversion.minor
         self.pvmicro = package.bversion.micro
         self.pvqual = package.bversion.qual
-
+        
+    def values(self):
+        return str(self.bundle_id)+','+str(self.package_name)+','+str(self.pvmajor)+','+\
+            str(self.pvminor)+','+str(self.pvmicro)+','+str(self.pvqual)
+            
 class PackageImportTuple:
     def __init__(self, bundle_id, package):
         self.bundle_id = bundle_id
         self.package_name = package.name        
-
+        
         self.pb_vmajor = package.bversion.major
         self.pb_vminor = package.bversion.minor
         self.pb_vmicro = package.bversion.micro
@@ -127,24 +163,39 @@ class PackageImportTuple:
         self.pe_vminor = package.eversion.minor
         self.pe_vmicro = package.eversion.micro
         self.pe_vqual = package.eversion.qual
-
+        
+    def values(self):
+        return str(self.bundle_id)+','+str(self.package_name)+','+\
+            str(self.pb_vmajor)+','+str(self.pb_vminor)+','+str(self.pb_vmicro)+','+\
+            str(self.pb_vqual)+','+str(self.pe_vmajor)+','+str(self.pe_vminor)+','+\
+            str(self.pe_vmicro)+','+str(self.pe_vqual)
+            
 class ExtraLibTuple:
     def __init__(self, bundle_id, extra_lib):
         self.bundle_id = bundle_id
         self.root = extra_lib.root
         self.file = extra_lib.file
-
+        
+    def values(self):
+        return str(self.bundle_id)+','+str(self.root)+','+str(self.file)
+        
 class JUnitTuple:
     def __init__(self, bundle_id, junit_root, junit_package_name, junit_file_name):
         self.bundle_name = bundle_id
         self.root = junit_root
         self.package = junit_package_name
         self.file_name = junit_file_name
-
+        
+    def values(self):
+        return str(self.bundle_name)+','+str(self.root)+','+str(self.package)\
+            +','+str(self.file_name)
+        
 class ClasspathJarTuple:
     def __init__(self, bundle_id, classpath_jar):
         self.bundle_name = bundle_id
         self.classpath_jar = classpath_jar    
+    def values(self):
+        return str(self.bundle_name)+','+str(self.classpath_jar)
         
 class SourceBundleFinder:
     def __init__(self):
