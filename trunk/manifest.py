@@ -58,7 +58,7 @@ class Bundle:
         self.classpath = None
         self.extra_libs = {}
         self.binary_bundle_dir = False
-        self.classpath_jars = None
+        self.classpath_jars = []
         
     def add_ipackage(self, i):
         self.ipackages.append(i)
