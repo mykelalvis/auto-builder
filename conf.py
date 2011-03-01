@@ -20,7 +20,7 @@
 project_name = 'Minerva'
 
 library_path = [
-    '../minerva/Minerva-SDK/lib/'
+    '../Minerva-SDK/lib/'
 ]
 
 #bundle_dirs = [
@@ -30,10 +30,10 @@ library_path = [
 #]
 
 source_path = [
-    '../minerva/org.syndeticlogic.minerva',
-    '../minerva/org.syndeticlogic.minerva.init',
-    '../minerva/org.syndeticlogic.minerva.tools',
-    '../minerva/org.syndeticlogic.minerva.test'
+    '../org.syndeticlogic.minerva',
+    '../org.syndeticlogic.minerva.init',
+    '../org.syndeticlogic.minerva.tools',
+    '../org.syndeticlogic.minerva.test'
 ]
 
 #do_not_package_libs = [
