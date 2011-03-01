@@ -48,6 +48,7 @@ def set_logger_level(log_level):
     dependencies.set_logger_level(log_level)
     generator.set_logger_level(log_level)
     manifest.set_logger_level(log_level)
+    persist.set_logger_level(log_level)
 
 class Parameters:
     def __init__(self):
@@ -73,7 +74,8 @@ class Parameters:
         
         project_name_help = 'specifies the name to use in the generated '\
                                  'content; overrides the project_name defined '\
-                                 'in conf.py'        
+                                 'in conf.py'
+        recreate_db_help = 'recreate the database'
                 
         #; if no options are given, '\
         #                 'then this command is executed; supported values'\
@@ -102,6 +104,8 @@ class Parameters:
                                dest="project_name", metavar="NAME", 
                                help=project_name_help)
         self.parser.add_option('-z', action='store_true', default=False, dest='z')
+        self.parser.add_option('-r','--recreate', action='store_true',
+                               default=False, dest='recreate')
         #self.parser.add_option("-g", "--gen-build",
         #              dest="gen_build", metavar="BUILD-TYPE", type=str,
         #              default='ant', help=gen_build_help)
@@ -215,6 +219,16 @@ class AutoBuilder:
         cmd_set = False        
         dependencies_resolved = False
         
+        if self.params.options.recreate:
+            try:
+                os.remove('auto-build.db')
+            except OSError as error:
+                import re
+                if re.search('No such file', error.__str__()):
+                    logger.info(error)
+                else:
+                    raise error
+        
         if self.params.options.display_jars:
             print '-'*80
             self.jfinder.display()
@@ -239,7 +253,7 @@ class AutoBuilder:
             for bundle in self.sfinder.bundles:
                 r.add_bundle(bundle)
                 break
-            
+        
         
         if self.params.options.build_gen or not cmd_set:
             if dependencies_resolved == False:
