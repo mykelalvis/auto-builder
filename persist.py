@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
 import sqlite3
+import logging
+import os
 
+logger = logging.getLogger(__name__)
+def set_logger_level(logLevel):
+    logger.setLevel(logLevel)
+    
 class RelationManager:   
     def __init__(self):
-        self.bundle_id = 0
         self.bundle_rvar = []
         self.import_rvar = []
         self.export_rvar = []
@@ -13,83 +18,107 @@ class RelationManager:
         self.classpath_jar_rvar = []
                                  
     def add_bundle(self, bundle):
-        bt = BundleTuple(self.bundle_id, bundle)
-        self.bundle_id += 1
+        c = sqlite3.connect('auto-build.db')
+        #
+        #count = c.execute('select count(id) from bundles').next()[0]
+        #print count
+        #if count > 0:
+        #    bundle_id = c.execute('select max(id) from bundles').next()
+        #
+        #    print type(bundle_id), bundle_id.__len__(), type(bundle_id[0]), bundle_id[0], bundle_id
+        #
+        #    assert type(bundle_id) == tuple
+        #    assert bundle_id.__len__() == 1
+        #    assert type(bundle_id[0]) == int
+        #    self.bundle_id = bundle_id[0] + 1
+        #
+        bt = BundleTuple(bundle)
         self.bundle_rvar.append(bt)
         
-        c = sqlite3.connect('auto-build.db')
-        insert_bt = '''insert into bundles values('+bt.values()+')'''
+        insert_bt = 'insert into bundles values('+bt.values()+')'
         print insert_bt
-        c.execute(insert_bt)
+        try:
+            c.execute(insert_bt)
+        except sqlite3.IntegrityError as sqlerr:
+            logger.error('sqlite3.IntegrityError = '+str(sqlerr))
+        
+        for rbundle in bundle.rbundles:
+            rb = RequiredBundleTuple(bt.id, rbundle.name)
+            insert_rb = 'insert into required_bundles values('+rb.values()+')'
+            print insert_rb
+            c.execute(insert_rb)
+            self.export_rvar.append(rb)
         
         for epackage in bundle.epackages:
             ex = PackageExportTuple(bt.id, epackage)
-            insert_ex = 'insert into bundles values('+ex.values()+')'
+            insert_ex = 'insert into exports values('+ex.values()+')'
             print insert_ex
             c.execute(insert_ex)
             self.export_rvar.append(ex)
             
-        for ipacage in bundle.ipackages:
+        for ipackage in bundle.ipackages:
             im = PackageImportTuple(bt.id, ipackage)
-            insert_im = 'insert into bundles values('+im.values()+')'
+            insert_im = 'insert into imports values('+im.values()+')'
             print insert_im            
             c.execute(insert_im)                                 
             self.import_rvar.append(im)
             
         for extra_lib in bundle.extra_libs:
             exlib = ExtraLibTuple(bt.id, extra_lib)
-            insert_exlib = 'insert into bundles values('+exlib.values()+')'
+            insert_exlib = 'insert into extra_libs values('+exlib.values()+')'
             print insert_exlib
             c.execute(insert_exlib)                                 
             self.extra_libs_rvar.append(exlib)
             
         for junit_test in bundle.junit_tests:
             junit = JUnitTuple(bt.id, junit_test[0], junit_test[1], junit_test[3])
-            insert_junit = 'insert into bundles values('+junit.values()+')'
+            insert_junit = 'insert into junit_tests values('+junit.values()+')'
             print insert_junit
             c.execute(insert_junit)                                 
             self.junit_rvar.append(junit)
             
-        for classpath_jar in bundle.claspath_jars:
+        for classpath_jar in bundle.classpath_jars:
             classpathjar = ClasspathJarTuple(bt.id, classpath_jar)
-            insert_classpathjar = 'insert into bundles values('+classpathjar.values()+')'
+            insert_classpathjar = 'insert into classpath_jars values('+classpathjar.values()+')'
             print insert_classpathjar            
             c.execute(insert_classpathjar)                                 
             self.classpath_jar_rvar.append(classpathjar)
+        
+        c.commit()
+        c.close()    
+            
 
     def create_relations(self):
         bundle_relation = 'create table if not exists bundles'\
                 '(id  INT primary key on conflict fail,'\
-                'name TEXT, version_major INT version_minor INT,'\
+                'name TEXT prm, version_major INT, version_minor INT,'\
                 'version_micro INT, version_qual TEXT, root TEXT,'\
                 'is_binary_bundle INT, file TEXT, fragment INT, '\
                 'fragment_host TEXT, binary_bundle_dir TEXT)'
         
         required_bundle_relation = 'create table if not exists required_bundles'\
-                '(bundle_id  INT primary key on conflict fail, requried_bundle_name TEXT)'
+                '(bundle_id  INT, requried_bundle_name TEXT)'
                                     
         package_export_relation = 'create table if not exists exports '\
-                '(bundle_id INT primary key on conflict fail,package_name_name TEXT,'\
+                '(bundle_id INT,package_name_name TEXT,'\
                 'version_major INT, version_minor INT, version_micro INT,'\
                 'version_qual TEXT)'
             
         package_import_relation = 'create table if not exists imports '\
-                '(bundle_id INT primary key on conflict fail, package_name_name TEXT,'\
+                '(bundle_id INT, package_name_name TEXT,'\
                 'begin_version_major INT, begin_version_minor INT,'\
                 'begin_version_micro INT, begin_version_qual TEXT,'\
                 'end_version_major INT, end_version_minor INT, end_version_micro INT,'\
                 'end_version_qual TEXT)'
         
         extra_lib_relation = 'create table if not exists extra_libs' \
-                '(bundle_id INT primary key on conflict fail, root TEXT, file TEXT)'
+                '(bundle_id INT, root TEXT, file TEXT)'
         
         junit_relation = 'create table if not exists junit_tests'\
-                '(bundle_id INT primary key on conflict fail,'\
-                'root TEXT, junit_package_name TEXT, file_name TEXT)'
+                '(bundle_id INT, root TEXT, junit_package_name TEXT, file_name TEXT)'
         
-        classpath_jar_relation = 'create table if not exists classpath_jar '\
-                '(bundle_id INT primary key on conflict fail,'\
-                'classpath_jar_filename TEXT)'
+        classpath_jar_relation = 'create table if not exists classpath_jars '\
+                '(bundle_id INT, classpath_jar_filename TEXT)'
 
         c = sqlite3.connect('auto-build.db')
         c.execute(bundle_relation)
@@ -102,16 +131,20 @@ class RelationManager:
         
         
 class BundleTuple:
-    def __init__(self, bundle_id, bundle):
-        self.id = bundle_id
+    def __init__(self, bundle):
+
         self.sym_name = bundle.sym_name
         self.vmajor = bundle.version.major
         self.vminor = bundle.version.minor
         self.vmicro = bundle.version.micro
         self.vqual = bundle.version.qual
-        self.root = bundle.root
+        self.root = os.path.abspath(bundle.root)
+
+        self.id = self.root+'.'+self.sym_name+'-'+self.vmajor+'.'+self.vminor+\
+                  '.'+self.vmicro+'.'+self.vqual
+        
         self.is_binary_bundle = bundle.is_binary_bundle
-        self.file = bundle.file
+        self.file = bundle.file        
         self.fragment = bundle.fragment
         self.fragment_host = bundle.fragment_host
         self.binary_bundle_dir = bundle.binary_bundle_dir
@@ -119,56 +152,62 @@ class BundleTuple:
     def values(self):
         is_binary_bundle = 0
         fragment = 0
+        binary_bundle_dir = 0
         if self.is_binary_bundle:
             is_binary_bundle = 1
+        if self.binary_bundle_dir:
+            binary_bundle_dir = 1
         if fragment:
             fragment = 1
-            
-        return str(self.id)+','+str(self.sym_name)+','+str(self.vmajor)+','+\
-                str(self.vminor)+','+str(self.vmicro)+','+str(self.vqual)+','+\
-                str(self.root)+','+str(is_binary_bundle)+','+str(self.file)+','+\
-                str(fragment)+','+str(self.fragment_host)+','+str(self.binary_bundle_dir)
-                
+
+        ret = '"'+str(self.id)+'","'+str(self.sym_name)+'","'+str(self.vmajor)+'","'+\
+                str(self.vminor)+'","'+str(self.vmicro)+'","'+str(self.vqual)+'","'+\
+                str(self.root)+'","'+str(is_binary_bundle)+'","'+str(self.file)+'","'+\
+                str(fragment)+'","'+str(self.fragment_host)+'","'+str(binary_bundle_dir)+'"'
+        
+        print ret
+        return ret
 class RequiredBundleTuple:
     def __init__(self, bundle_id, required_bundle_name):
         self.bundle_id = bundle_id
         self.required_bundle_name = required_bundle_name
     def values(self):
-        return str(self.bundle_id)+','+str(self.required_bundle_name)
+        return '"'+str(self.bundle_id)+'","'+str(self.required_bundle_name)+'"'
         
 class PackageExportTuple:
     def __init__(self, bundle_id, package):
         self.bundle_id = bundle_id
         self.package_name = package.name
-        self.pvmajor = package.bversion.major
-        self.pvminor = package.bversion.minor
-        self.pvmicro = package.bversion.micro
-        self.pvqual = package.bversion.qual
+        self.pvmajor = package.b_version.major
+        self.pvminor = package.b_version.minor
+        self.pvmicro = package.b_version.micro
+        self.pvqual = package.b_version.qual
         
     def values(self):
-        return str(self.bundle_id)+','+str(self.package_name)+','+str(self.pvmajor)+','+\
-            str(self.pvminor)+','+str(self.pvmicro)+','+str(self.pvqual)
+        return '"'+str(self.bundle_id)+'","'+str(self.package_name)+'","'+\
+            str(self.pvmajor)+'","'+str(self.pvminor)+'","'+str(self.pvmicro)+\
+            '","'+str(self.pvqual)+'"'
             
 class PackageImportTuple:
     def __init__(self, bundle_id, package):
         self.bundle_id = bundle_id
         self.package_name = package.name        
         
-        self.pb_vmajor = package.bversion.major
-        self.pb_vminor = package.bversion.minor
-        self.pb_vmicro = package.bversion.micro
-        self.pb_vqual = package.bversion.qual
+        self.pb_vmajor = package.b_version.major
+        self.pb_vminor = package.b_version.minor
+        self.pb_vmicro = package.b_version.micro
+        self.pb_vqual = package.b_version.qual
         
-        self.pe_vmajor = package.eversion.major
-        self.pe_vminor = package.eversion.minor
-        self.pe_vmicro = package.eversion.micro
-        self.pe_vqual = package.eversion.qual
+        self.pe_vmajor = package.e_version.major
+        self.pe_vminor = package.e_version.minor
+        self.pe_vmicro = package.e_version.micro
+        self.pe_vqual = package.e_version.qual
         
     def values(self):
-        return str(self.bundle_id)+','+str(self.package_name)+','+\
-            str(self.pb_vmajor)+','+str(self.pb_vminor)+','+str(self.pb_vmicro)+','+\
-            str(self.pb_vqual)+','+str(self.pe_vmajor)+','+str(self.pe_vminor)+','+\
-            str(self.pe_vmicro)+','+str(self.pe_vqual)
+        return '"'+str(self.bundle_id)+'","'+str(self.package_name)+'","'+\
+            str(self.pb_vmajor)+'","'+str(self.pb_vminor)+'","'+str(self.pb_vmicro)+'","'+\
+            str(self.pb_vqual)+'","'+str(self.pe_vmajor)+'","'+str(self.pe_vminor)+'","'+\
+            str(self.pe_vmicro)+'","'+str(self.pe_vqual)+'"'
             
 class ExtraLibTuple:
     def __init__(self, bundle_id, extra_lib):
@@ -177,7 +216,7 @@ class ExtraLibTuple:
         self.file = extra_lib.file
         
     def values(self):
-        return str(self.bundle_id)+','+str(self.root)+','+str(self.file)
+        return '"'+str(self.bundle_id)+'","'+str(self.root)+'","'+str(self.file)+'"'
         
 class JUnitTuple:
     def __init__(self, bundle_id, junit_root, junit_package_name, junit_file_name):
@@ -187,8 +226,8 @@ class JUnitTuple:
         self.file_name = junit_file_name
         
     def values(self):
-        return str(self.bundle_name)+','+str(self.root)+','+str(self.package)\
-            +','+str(self.file_name)
+        return '"'+str(self.bundle_name)+'","'+str(self.root)+'","'+str(self.package)\
+            +'","'+str(self.file_name)
         
 class ClasspathJarTuple:
     def __init__(self, bundle_id, classpath_jar):
