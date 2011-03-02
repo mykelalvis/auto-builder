@@ -222,7 +222,7 @@ class AutoBuilder:
         if self.params.options.recreate:
             try:
                 os.remove('auto-build.db')
-            except OSError as error:
+            except OSError, error:
                 import re
                 if re.search('No such file', error.__str__()):
                     logger.info(error)
@@ -253,7 +253,8 @@ class AutoBuilder:
             for bundle in self.sfinder.bundles:
                 r.add_bundle(bundle)
                 break
-        
+            d = persist.Dependencies()
+            d.resolve()
         
         if self.params.options.build_gen or not cmd_set:
             if dependencies_resolved == False:

@@ -39,7 +39,7 @@ class RelationManager:
         print insert_bt
         try:
             c.execute(insert_bt)
-        except sqlite3.IntegrityError as sqlerr:
+        except sqlite3.IntegrityError, sqlerr:
             logger.error('sqlite3.IntegrityError = '+str(sqlerr))
         
         for rbundle in bundle.rbundles:
@@ -128,6 +128,8 @@ class RelationManager:
         c.execute(extra_lib_relation)
         c.execute(junit_relation)
         c.execute(classpath_jar_relation)
+        c.commit()
+        c.close()
         
         
 class BundleTuple:
@@ -424,6 +426,243 @@ class BinaryBundleFinder:
                     if file.endswith(r'.jar'):
                         self.jar_files.append((root, file))
                 
+
+class Dependencies:
+    def __init__(self):
+        pass        
+    def __add_package__(self, packages, package, bundle):
+        #package.name -> [(package, bundle), (package, bundle)]
+        if package.name in packages:
+                
+            inserted = False
+            for pentry, bentry in packages[package.name]:
+                index = packages[package.name].index((pentry, bentry))
+                assert index >= 0 and index <= len(packages[package.name])
+                    
+                if package.b_version.is_equal(pentry.b_version):
+                    if bundle.is_binary_bundle:
+                        packages[package.name].insert(index, (package, bundle))
+                    else:
+                        packages[package.name].insert(index+1, (package, bundle))
+                    inserted = True
+                    break
+                    
+                elif package.b_version.is_less(pentry.b_version):
+                    packages[package.name].insert(index, (package, bundle))
+                    inserted = True
+                    break
+                    
+            if inserted == False:
+                packages[package.name].append((package, bundle))
+                    
+        else:
+            packages[package.name] = [(package, bundle)]
+            
+    def __partially_order__(self, bundle):
+        ret = False
+        for dep_bundle in bundle.deps:
+            for dep_dep_bundle in dep_bundle.deps:
+                if dep_dep_bundle == bundle:
+                    logger.error('circular dependencies are not supported.')
+                    assert False
+                        
+                #print 'bundle ', bundle, bundle.sym_name, '=', bundle.build_level                
+                #print 'dep bundle ', dep_bundle, dep_bundle.sym_name,'=',\
+                # dep_bundle.build_level
+                
+            if dep_bundle.build_level >= bundle.build_level and\
+                                         not dep_bundle.is_binary_bundle:
+                #print 'matched: ', bundle.sym_name, ' deps on ',\
+                # dep_bundle.sym_name
+                bundle.build_level = dep_bundle.build_level + 1
+                ret = True
+        return ret      
+        
+    def sort(self):
+        #for bundle in src.bundles:
+        #    print bundle.sym_name, bundle.build_level
+        h4x0r = True
+        while h4x0r:
+            h4x0r = False
+            for bundle in self.src.bundles:
+                if self.__partially_order__(bundle):
+                    h4x0r = True
+                   
+        self.src.bundles = sorted(self.src.bundles, key=lambda bundle : bundle.build_level)
+        
+        #for bundle in src.bundles:
+            #print bundle.sym_name, bundle.build_level
+        #    pass
+        
+        return True
+        
+    def resolve(self):
+        import manifest
+        c = sqlite3.connect('auto-build.db')
+        results = c.execute('select * from bundles')
+        bundles = {}
+        #print '---------------#######', results.next(), '####################'
+
+        while True:
+            result = results.next()
+            if not result:
+                break
+#            print '---------------#######', result, '####################'
+            bundle = manifest.Bundle()
+            bundle.load_from_database(result)
+
+            print '-------------',bundle.id, '---------------'
+            bundles[bundle.id] = bundle
+            
+            result1 = c.execute('select * from required_bundles where required_bundles.bundle_id = "'+bundle.id+'"')
+            try:
+                print result1.next()
+            except:
+                pass
+
+            result1 = c.execute('select * from imports where imports.bundle_id = "'+bundle.id+'"')
+            try:
+                print result1.next()
+            except:
+                pass
+            
+            result1 = c.execute('select * from exports where exports.bundle_id = "'+bundle.id+'"')
+            try:
+                print result1.next()
+            except:
+                pass
+            
+            result1 = c.execute('select * from extra_libs where extra_libs.bundle_id = "'+bundle.id+'"')
+            try:
+                print result1.next()
+            except:
+                pass
+            
+            result1 = c.execute('select * from junit_tests where junit_tests.bundle_id = "'+bundle.id+'"')
+            try:
+                print result1.next()
+            except:
+                pass
+            
+            result1 = c.execute('select * from classpath_jars where classpath_jars.bundle_id = "'+bundle.id+'"')
+            try:
+                print result1.next()
+            except:
+                pass
+            return
+        #    self.bundles
+        
+        for bundle in self.src.bundles:
+            #print bundle.sym_name
+            assert not bundle.sym_name in self.bundles 
+            self.bundles[bundle.sym_name] = bundle
+                
+            for package in bundle.epackages:
+                self.__add_package__(self.exports, package, bundle)
+        #assert False
+        
+        #print bundles
+            
+        for bundle in self.jars.bundles:
+            #print '--->'+str(bundle.sym_name)+'<---', bundle
+            if not bundle.sym_name in self.bundles:
+                self.bundles[bundle.sym_name] = bundle
+            else:
+                #print 'Bundle '+str(bundle.sym_name)+\
+                #' found both binary and src;'+\
+                #' using the src version (this should be an option)'
+                assert join(bundle.root, bundle.file) in self.target_platform
+                del self.target_platform[join(bundle.root,bundle.file)]
+                
+            #print bundle.display()
+            for package in bundle.epackages:
+                self.__add_package__(self.exports, package, bundle)
+        
+        #assert False
+        #print bundles
+        required_jars = {}
+        # package.name = [(pacakge, bundle), (package, bundle)]
+        for bundle in self.src.bundles:
+            
+            #if bundle.fragment:
+            #    assert bundle.fragment_host.name in self.bundles
+              
+            for required_bundle_info in bundle.rbundles:
+                found = False
+                #print 'required bundle', bundle.sym_name, \
+                #    required_bundle_info.name
+                
+                if required_bundle_info.name in self.bundles and \
+                    required_bundle_info.is_in_range(\
+                        self.bundles[required_bundle_info.name].version):
+                    found = True
+                    
+                    if bundle.fragment and\
+                        bundle.sym_name == 'com.ambient.labtrack.test':
+                        
+                        print 'adding dep '+str(required_bundle_info.name)+\
+                           '-'+str(self.bundles[required_bundle_info.name].version),\
+                           ' to ', bundle.sym_name
+                        
+                    print 'Adding the dep bundle = ', required_bundle_info.name,\
+                           self.bundles[required_bundle_info.name]
+                    
+                    bundle.add_dep(self.bundles[required_bundle_info.name])
+                    if self.bundles[required_bundle_info.name].is_binary_bundle:
+                        required_jars[self.bundles[required_bundle_info.name].sym_name] =\
+                        self.bundles[required_bundle_info.name]
+                        
+                if not found:
+                    print 'ERROR could not find matching required bundle ',\
+                        required_bundle_info.name, required_bundle_info
+                        
+            for package in bundle.ipackages:
+                found = False
+                version_found = []
+                if package.name in self.exports:
+                    for ex_package, ex_bundle in self.exports[package.name]:
+                        #if package.name == 'javax.jms':
+                            #import pdb
+                            #pdb.set_trace()
+                        if package.is_in_range(ex_package.b_version):
+                            found = True
+                            #print 'adding dep '+ex_bundle.sym_name+' to '+\
+                            #bundle.sym_name, 'because of package ', package.name
+                            bundle.add_dep(ex_bundle)
+                            if ex_bundle.is_binary_bundle:
+                                required_jars[ex_bundle.sym_name] = ex_bundle
+                        else:
+                            version_found.append(ex_package)
+                            #print ' pde build doesnt do the right thing either'
+                            
+                        #else:
+                            #import pdb
+                            #pdb.set_trace()
+                        #    if package.is_in_range(ex_package.b_version):
+                        #        pass
+                    if not found:
+                        found_str = ''
+                        for i in version_found:
+                            found_str += i.__str__() + ', '
+                            
+                        print 'ERROR: cannot find the correct version of '+\
+                              package.name+' for '+bundle.sym_name+\
+                              '; requires '+package.__str__()+' found = '+found_str
+                        return False
+                        
+                else:
+                    import re
+                    print re.match(r'javax.xml.namespace', str(self.exports))
+                    print 'ERROR: cannot resolve package: ', package.name\
+                    +' for bundle '+bundle.sym_name+'; skipping it'
+                    #return False
+                    
+        #print required_jars
+        #self.required_jars = required_jars
+        #assert False
+        return True
+        
+        
 if __name__ == '__main__':
     self.jfinder = BinaryBundleFinder()
     self.sfinder = SourceBundleFinder()
