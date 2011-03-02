@@ -42,6 +42,7 @@ class Bundle:
         # type Bundle); extra_libs are a list of none OSGi jar files that are
         # included; classpath is the transitively closed classpath of bundles;
         # build level is the order in which the source bundles need to be built.
+        self.id = ''
         self.sym_name = ''
         self.ipackages = []
         self.epackages = []
@@ -59,6 +60,21 @@ class Bundle:
         self.extra_libs = {}
         self.binary_bundle_dir = False
         self.classpath_jars = []
+    
+    def load_from_database(self, result):
+        assert len(result) == 12
+        self.id = result[0]
+        self.sym_name = result[1]
+        self.version.set_major(result[2])
+        self.version.set_minor(result[3])
+        self.version.set_micro(result[4])
+        self.version.set_qual(result[5])
+        self.root = result[6]
+        self.is_binary_bundle = result[7]
+        self.file = result[8]
+        self.fragment = result[9]
+        self.fragment_host = result[10]
+        self.binary_bundle_dir = result[11]
         
     def add_ipackage(self, i):
         self.ipackages.append(i)
