@@ -248,12 +248,13 @@ class AutoBuilder:
         
         if self.params.options.z:
             cmd_set = True
-            r = persist.RelationManager()
+            db_path = 'auto-build.db'
+            r = persist.RelationManager(db_path)
             r.create_relations()
             for bundle in self.sfinder.bundles:
                 r.add_bundle(bundle)
                 break
-            d = persist.Dependencies()
+            d = persist.Dependencies(db_path)
             d.resolve()
         
         if self.params.options.build_gen or not cmd_set:
