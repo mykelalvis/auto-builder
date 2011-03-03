@@ -75,7 +75,7 @@ class Parameters:
         project_name_help = 'specifies the name to use in the generated '\
                                  'content; overrides the project_name defined '\
                                  'in conf.py'
-        recreate_db_help = 'recreate the database'
+        #recreate_db_help = 'recreate the database'
                 
         #; if no options are given, '\
         #                 'then this command is executed; supported values'\
@@ -103,9 +103,9 @@ class Parameters:
         self.parser.add_option("-n", "--project-name", default='', type=str,
                                dest="project_name", metavar="NAME", 
                                help=project_name_help)
-        self.parser.add_option('-z', action='store_true', default=False, dest='z')
-        self.parser.add_option('-r','--recreate', action='store_true',
-                               default=False, dest='recreate')
+        #self.parser.add_option('-z', action='store_true', default=False, dest='z')
+        #self.parser.add_option('-r','--recreate', action='store_true',
+        #                       default=False, dest='recreate')
         #self.parser.add_option("-g", "--gen-build",
         #              dest="gen_build", metavar="BUILD-TYPE", type=str,
         #              default='ant', help=gen_build_help)
@@ -246,16 +246,16 @@ class AutoBuilder:
             cmd_set = True
             dependencies_resolved = True
         
-        if self.params.options.z:
-            cmd_set = True
-            db_path = 'auto-build.db'
-            r = persist.RelationManager(db_path)
-            r.create_relations()
-            for bundle in self.sfinder.bundles:
-                r.add_bundle(bundle)
-                break
-            d = persist.Dependencies(db_path)
-            d.resolve()
+        #if self.params.options.z:
+        #    cmd_set = True
+        #    db_path = 'auto-build.db'
+        #    r = persist.RelationManager(db_path)
+        #    r.create_relations()
+        #    for bundle in self.sfinder.bundles:
+        #        r.add_bundle(bundle)
+        #        break
+        #    d = persist.Dependencies(db_path)
+        #    d.resolve()
         
         if self.params.options.build_gen or not cmd_set:
             if dependencies_resolved == False:
