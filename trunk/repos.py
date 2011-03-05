@@ -39,12 +39,7 @@ class UriHelper:
             assert bundle.hasAttribute('uri')
             assert bundle.hasAttribute('version')
             print bundle.getAttribute('symbolicname'), bundle.getAttribute('uri'), bundle.getAttribute('version')
-        
-        #for i in resources:
-        
-#        print external
         print 80*'#'
-        #print release
         
 if __name__ == '__main__':
     uh = UriHelper()
