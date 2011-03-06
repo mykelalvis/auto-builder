@@ -262,7 +262,7 @@ class Dependencies:
                     str(dep_bundle.build_level))
                 
             if dep_bundle.build_level >= bundle.build_level and not dep_bundle.is_binary_bundle:
-                logger.debub('matched: '+str(bundle.sym_name)+' deps on '+\
+                logger.debug('matched: '+str(bundle.sym_name)+' deps on '+\
                     str(dep_bundle.sym_name))
                 bundle.build_level = dep_bundle.build_level + 1
                 ret = True
@@ -334,7 +334,7 @@ class Dependencies:
             if not found:
                 logger.error('could not find matching required bundle '+\
                     str(required_bundle_info.name)+str(required_bundle_info))
-                #return False
+                return False
         return True
     
     def resolve_packages(self, bundle):
@@ -358,14 +358,14 @@ class Dependencies:
                     for i in version_found:
                         found_str += i.__str__() + ', '
                         
-                    logger.warn('cannot find the correct version of '+\
+                    logger.critical('cannot find the correct version of '+\
                           package.name+' for '+bundle.sym_name+\
                           '; requires '+package.__str__()+' found = '+found_str)
                     return False        
             else:
                 import re
                 logger.debug(str(re.match(r'javax.xml.namespace', str(self.exports))))
-                logger.warn('cannot resolve package '+str(package.name)+\
+                logger.debug('cannot resolve package '+str(package.name)+\
                             ' for bundle '+bundle.sym_name+'; skipping it')
         return True
                 
@@ -375,7 +375,7 @@ class Dependencies:
 
         for bundle in self.src.bundles:
             if not self.resolve_required_bundles(bundle):
-                return True
+                return False
                 
             if not self.resolve_packages(bundle):
                 return False

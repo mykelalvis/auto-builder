@@ -31,7 +31,6 @@ import manifest
 import subprocess
 import dependencies
 import generator
-import persist
 
 from optparse import OptionParser
 from os.path import join, abspath
@@ -48,7 +47,7 @@ def set_logger_level(log_level):
     dependencies.set_logger_level(log_level)
     generator.set_logger_level(log_level)
     manifest.set_logger_level(log_level)
-    persist.set_logger_level(log_level)
+  #  persist.set_logger_level(log_level)
 
 class Parameters:
     def __init__(self):
@@ -198,8 +197,8 @@ class AutoBuilder:
         self.sfinder = SourceBundleFinder()
         self.params = Parameters()
         
-        #self.jfinder.find(self.params.options.jar_path)
-        #self.jfinder.load()            
+        self.jfinder.find(self.params.options.jar_path)
+        self.jfinder.load()            
         self.sfinder.find(self.params.options.src_path)
         self.sfinder.load()
 
@@ -220,15 +219,15 @@ class AutoBuilder:
         cmd_set = False        
         dependencies_resolved = False
         
-        if self.params.options.recreate:
-            try:
-                os.remove('auto-build.db')
-            except OSError, error:
-                import re
-                if re.search('No such file', error.__str__()):
-                    logger.info(error)
-                else:
-                    raise error
+        #if self.params.options.recreate:
+        #    try:
+        #        os.remove('auto-build.db')
+        #    except OSError, error:
+        #        import re
+        #        if re.search('No such file', error.__str__()):
+        #            logger.info(error)
+        #        else:
+        #            raise error
         
         if self.params.options.display_jars:
             print '-'*80

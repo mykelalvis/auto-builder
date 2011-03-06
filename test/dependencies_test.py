@@ -53,7 +53,6 @@ class TestDependencies(unittest.TestCase):
         sfinder.load()
         
         deps = Dependencies(bfinder, sfinder, bfinder.target_platform)
-        
         deps.resolve()
 
         bundles_epackages = { 
